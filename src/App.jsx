@@ -287,13 +287,17 @@ export default function App() {
 
   // 5.2 手動觸發 GitHub Actions 雲端工作流
   const handleTriggerWorkflow = async () => {
-    if (!githubToken) return;
+    const cleanToken = githubToken ? githubToken.trim() : '';
+    if (!cleanToken) {
+      showToast("❌ 請先輸入有效的 GitHub Token！");
+      return;
+    }
     setIsTriggeringAction(true);
     try {
       const response = await fetch('https://api.github.com/repos/zerokemx-ui/Stock-picker/actions/workflows/deploy.yml/dispatches', {
         method: 'POST',
         headers: {
-          'Authorization': `token ${githubToken}`,
+          'Authorization': `token ${cleanToken}`,
           'Accept': 'application/vnd.github.v3+json',
           'Content-Type': 'application/json'
         },
@@ -860,7 +864,7 @@ export default function App() {
 
       {/* 全域美觀微調的 Toast 懸浮通知 */}
       {toastMessage && (
-        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: 'rgba(14, 19, 38, 0.95)', border: '1px solid rgba(56, 189, 248, 0.25)', boxShadow: '0 8px 30px rgba(0,0,0,0.5), var(--shadow-neon-blue)', padding: '0.85rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10000, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', animation: 'slide-up-fade 0.3s ease-out' }}>
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: 'rgba(14, 19, 38, 0.95)', border: '1px solid rgba(56, 189, 248, 0.25)', boxShadow: '0 8px 30px rgba(0,0,0,0.5), var(--shadow-neon-blue)', padding: '0.85rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 99999, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', animation: 'slide-up-fade 0.3s ease-out' }}>
           {toastMessage}
         </div>
       )}
