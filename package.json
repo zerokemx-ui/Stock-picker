@@ -6,7 +6,7 @@
   "scripts": {
     "dev:server": "node server.js",
     "build:data": "node scripts/generate-data.js",
-    "dev": "npm run build:data && vite",
+    "dev": "npm run build:data && concurrently \"node server.js\" \"vite\"",
     "build": "npm run build:data && vite build",
     "preview": "vite preview"
   },

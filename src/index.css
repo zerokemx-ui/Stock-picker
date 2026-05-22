@@ -766,3 +766,83 @@ h1, h2, h3, h4 {
   background: var(--accent-blue);
 }
 
+/* ==========================================================================
+   即時行情脈搏與漲跌停霓虹發光看板動畫 (Real-Time Live Pulse & Limit Neon Banners)
+   ========================================================================== */
+
+@keyframes live-pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+}
+
+@keyframes limit-up-blink {
+  0%, 100% {
+    background: rgba(255, 77, 77, 0.15);
+    border-color: rgba(255, 77, 77, 0.4);
+    box-shadow: 0 0 10px rgba(255, 77, 77, 0.2);
+    color: #ff4d4d;
+  }
+  50% {
+    background: rgba(255, 77, 77, 0.4);
+    border-color: #ff4d4d;
+    box-shadow: 0 0 25px rgba(255, 77, 77, 0.7), inset 0 0 10px rgba(255, 77, 77, 0.3);
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(255, 77, 77, 0.6);
+  }
+}
+
+.limit-up-neon {
+  animation: limit-up-blink 1.2s infinite ease-in-out;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-family);
+}
+
+@keyframes limit-down-blink {
+  0%, 100% {
+    background: rgba(0, 230, 118, 0.15);
+    border-color: rgba(0, 230, 118, 0.4);
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.2);
+    color: #00e676;
+  }
+  50% {
+    background: rgba(0, 230, 118, 0.4);
+    border-color: #00e676;
+    box-shadow: 0 0 25px rgba(0, 230, 118, 0.7), inset 0 0 10px rgba(0, 230, 118, 0.3);
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(0, 230, 118, 0.6);
+  }
+}
+
+.limit-down-neon {
+  animation: limit-down-blink 1.2s infinite ease-in-out;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-family);
+}
+
+

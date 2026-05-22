@@ -75,13 +75,51 @@ export default function StockDetail({
     return stocks.find(s => s.Code === stockCode);
   }, [stocks, stockCode]);
 
+  // 1.2. 實時行情狀態變數
+  const [liveStockData, setLiveStockData] = useState(null);
+  const [isLiveLoading, setIsLiveLoading] = useState(false);
+
+  // 1.3. 實時價格輪詢 useEffect (每 15 秒同步一次)
+  useEffect(() => {
+    if (!stockCode) return;
+    
+    // 重設上一檔股票殘留的實時資料
+    setLiveStockData(null);
+    
+    const fetchLivePrice = async () => {
+      setIsLiveLoading(true);
+      try {
+        const response = await fetch(`/api/stocks/realtime?codes=${stockCode}`);
+        const resData = await response.json();
+        if (resData.success && Array.isArray(resData.data) && resData.data.length > 0) {
+          setLiveStockData(resData.data[0]);
+        }
+      } catch (err) {
+        console.error("無法取得該股實時行情，將自動採用延遲/靜態收盤行情:", err);
+      } finally {
+        setIsLiveLoading(false);
+      }
+    };
+
+    fetchLivePrice();
+
+    const timer = setInterval(() => {
+      fetchLivePrice();
+    }, 15000);
+
+    return () => clearInterval(timer);
+  }, [stockCode]);
+
   // 如果找不到股票，則不渲染
   if (!stock) return null;
 
-  const closingPrice = safeFloat(stock.ClosingPrice, 100);
-  const changeVal = safeFloat(stock.Change, 0);
-  const changeClass = getChangeColorClass(stock.Change);
-  const changePctText = calculateChangeRate(stock.ClosingPrice, stock.Change);
+  // 1.4. 整合實時動態數值與靜態備份
+  const closingPrice = liveStockData ? parseFloat(liveStockData.ClosingPrice) : safeFloat(stock.ClosingPrice, 100);
+  const changeVal = liveStockData ? parseFloat(liveStockData.Change) : safeFloat(stock.Change, 0);
+  const changeClass = liveStockData ? getChangeColorClass(liveStockData.Change) : getChangeColorClass(stock.Change);
+  const changePctText = liveStockData 
+    ? (parseFloat(liveStockData.ChangePercent) >= 0 ? '+' : '') + parseFloat(liveStockData.ChangePercent).toFixed(2) + '%'
+    : calculateChangeRate(stock.ClosingPrice, stock.Change);
 
   // 2. 損益與配息試算狀態
   const [buyLots, setBuyLots] = useState(1);
@@ -419,9 +457,9 @@ export default function StockDetail({
 
   // 7. 計算當日交易區間進度 (High-Low Bar)
   const dayRangeProgress = useMemo(() => {
-    const low = safeFloat(stock.LowestPrice, closingPrice);
-    const high = safeFloat(stock.HighestPrice, closingPrice);
-    const open = safeFloat(stock.OpeningPrice, closingPrice);
+    const low = liveStockData ? parseFloat(liveStockData.LowestPrice) : safeFloat(stock.LowestPrice, closingPrice);
+    const high = liveStockData ? parseFloat(liveStockData.HighestPrice) : safeFloat(stock.HighestPrice, closingPrice);
+    const open = liveStockData ? parseFloat(liveStockData.OpeningPrice) : safeFloat(stock.OpeningPrice, closingPrice);
     
     if (high === low) return { openPct: 50, closePct: 50 };
     
@@ -429,7 +467,13 @@ export default function StockDetail({
     const closePct = ((closingPrice - low) / (high - low)) * 100;
     
     return { openPct, closePct };
-  }, [stock, closingPrice]);
+  }, [stock, closingPrice, liveStockData]);
+
+  // 定義開盤、最高、最低、成交量的實時/靜態解析
+  const displayLow = liveStockData ? parseFloat(liveStockData.LowestPrice) : parseFloat(stock.LowestPrice || stock.ClosingPrice);
+  const displayHigh = liveStockData ? parseFloat(liveStockData.HighestPrice) : parseFloat(stock.HighestPrice || stock.ClosingPrice);
+  const displayOpen = liveStockData ? parseFloat(liveStockData.OpeningPrice) : parseFloat(stock.OpeningPrice || stock.ClosingPrice);
+  const displayVolume = liveStockData ? parseFloat(liveStockData.TradeVolume) * 1000 : parseFloat(stock.TradeVolume);
 
   // 8. 損益試算即時結果計算
   const calcResults = useMemo(() => {
@@ -475,6 +519,12 @@ export default function StockDetail({
   const isWatched = watchlist.includes(stock.Code);
   const isCompared = compareList.includes(stock.Code);
 
+  const limitUpPrice = liveStockData && liveStockData.LimitUp ? parseFloat(liveStockData.LimitUp) : null;
+  const limitDownPrice = liveStockData && liveStockData.LimitDown ? parseFloat(liveStockData.LimitDown) : null;
+
+  const isLimitUp = limitUpPrice !== null && closingPrice >= limitUpPrice;
+  const isLimitDown = limitDownPrice !== null && closingPrice <= limitDownPrice;
+
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
       
@@ -494,9 +544,50 @@ export default function StockDetail({
               {stock.Code}
             </span>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <h2 style={{ fontSize: '1.6rem', fontWeight: 900 }}>{stock.Name}</h2>
                 <span className="badge badge-category">{stock.Category}</span>
+                {liveStockData ? (
+                  <span style={{ 
+                    fontSize: '0.72rem', 
+                    padding: '0.2rem 0.6rem', 
+                    background: 'rgba(34, 197, 94, 0.12)', 
+                    border: '1px solid rgba(34, 197, 94, 0.25)', 
+                    color: '#22c55e', 
+                    borderRadius: '6px', 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '5px', 
+                    fontWeight: 700, 
+                    letterSpacing: '0.5px' 
+                  }}>
+                    <span style={{ 
+                      width: '6px', 
+                      height: '6px', 
+                      borderRadius: '50%', 
+                      background: '#22c55e', 
+                      display: 'inline-block', 
+                      animation: 'live-pulse 1.6s infinite' 
+                    }}></span>
+                    即時行情 (Live {liveStockData.Time})
+                  </span>
+                ) : (
+                  <span style={{ 
+                    fontSize: '0.72rem', 
+                    padding: '0.2rem 0.6rem', 
+                    background: 'rgba(245, 158, 11, 0.12)', 
+                    border: '1px solid rgba(245, 158, 11, 0.25)', 
+                    color: 'var(--accent-gold)', 
+                    borderRadius: '6px', 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '5px', 
+                    fontWeight: 700, 
+                    letterSpacing: '0.5px' 
+                  }}>
+                    收盤行情 (TWSE)
+                  </span>
+                )}
               </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                 個股綜合分析診斷與交易策略工具
@@ -549,27 +640,43 @@ export default function StockDetail({
                 
                 {/* 股價大型展示 */}
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '2.8rem', fontWeight: 900, fontFamily: 'Outfit', letterSpacing: '-0.03em' }}>
-                      {parseFloat(stock.ClosingPrice).toFixed(2)}
-                    </span>
-                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <span style={{ fontSize: '1.05rem', fontFamily: 'Outfit', fontWeight: 700, display: 'inline-flex', alignItems: 'center' }} className={changeClass}>
-                        {changeVal > 0 ? <TrendingUp size={14} style={{ marginRight: '2px' }} /> : changeVal < 0 ? <TrendingDown size={14} style={{ marginRight: '2px' }} /> : null}
-                        {changeVal > 0 ? '+' : ''}{changeVal.toFixed(2)}
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
+                      <span style={{ fontSize: '2.8rem', fontWeight: 900, fontFamily: 'Outfit', letterSpacing: '-0.03em' }}>
+                        {closingPrice.toFixed(2)}
                       </span>
-                      <span style={{ fontSize: '0.82rem', fontFamily: 'Outfit', fontWeight: 600 }} className={changeClass}>
-                        {changePctText}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <span style={{ fontSize: '1.05rem', fontFamily: 'Outfit', fontWeight: 700, display: 'inline-flex', alignItems: 'center' }} className={changeClass}>
+                          {changeVal > 0 ? <TrendingUp size={14} style={{ marginRight: '2px' }} /> : changeVal < 0 ? <TrendingDown size={14} style={{ marginRight: '2px' }} /> : null}
+                          {changeVal > 0 ? '+' : ''}{changeVal.toFixed(2)}
+                        </span>
+                        <span style={{ fontSize: '0.82rem', fontFamily: 'Outfit', fontWeight: 600 }} className={changeClass}>
+                          {changePctText}
+                        </span>
+                      </div>
                     </div>
+
+                    {/* 🚨 漲停/跌停 呼吸霓虹看板 */}
+                    {isLimitUp && (
+                      <div className="limit-up-neon">
+                        <Flame size={15} style={{ fill: '#ff4d4d' }} />
+                        <span>漲停板 Limit Up</span>
+                      </div>
+                    )}
+                    {isLimitDown && (
+                      <div className="limit-down-neon">
+                        <Flame size={15} style={{ fill: '#00e676' }} />
+                        <span>跌停板 Limit Down</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* 當日最高最低走勢滑動定位條 (Yahoo Finance 風格) */}
                 <div style={{ margin: '1rem 0' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '0.35rem' }}>
-                    <span>今日最低 {parseFloat(stock.LowestPrice || closingPrice).toFixed(2)}</span>
-                    <span>今日最高 {parseFloat(stock.HighestPrice || closingPrice).toFixed(2)}</span>
+                    <span>今日最低 {displayLow.toFixed(2)}</span>
+                    <span>今日最高 {displayHigh.toFixed(2)}</span>
                   </div>
                   <div style={{ position: 'relative', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', margin: '0.5rem 0' }}>
                     {/* 開高低收區間 */}
@@ -596,8 +703,10 @@ export default function StockDetail({
                     }} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: '0.2rem' }}>
-                    <span>開盤價 {parseFloat(stock.OpeningPrice || closingPrice).toFixed(2)}</span>
-                    <span style={{ color: changeVal >= 0 ? 'var(--stock-up)' : 'var(--stock-down)' }}>最新收盤 {parseFloat(stock.ClosingPrice).toFixed(2)}</span>
+                    <span>開盤價 {displayOpen.toFixed(2)}</span>
+                    <span style={{ color: changeVal >= 0 ? 'var(--stock-up)' : 'var(--stock-down)' }}>
+                      {liveStockData ? "即時價格" : "最新收盤"} {closingPrice.toFixed(2)}
+                    </span>
                   </div>
                 </div>
 
@@ -606,8 +715,8 @@ export default function StockDetail({
                   <div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>今日成交量</div>
                     <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                      {formatVolumeInChang(stock.TradeVolume)}
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500, marginLeft: '4px' }}>({Number(stock.TradeVolume).toLocaleString()} 股)</span>
+                      {formatVolumeInChang(displayVolume)}
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500, marginLeft: '4px' }}>({Number(displayVolume).toLocaleString()} 股)</span>
                     </div>
                   </div>
                   
@@ -817,7 +926,7 @@ export default function StockDetail({
                 個股實戰交易損益 & 存股除權息試算機
               </h3>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: '6px' }}>
-                (依今日收盤價 {parseFloat(stock.ClosingPrice).toFixed(2)} 元為買入基準，手續費 0.1425%、證交稅 0.3%)
+                (依{liveStockData ? '即時價格' : '今日收盤價'} {closingPrice.toFixed(2)} 元為買入基準，手續費 0.1425%、證交稅 0.3%)
               </span>
             </div>
 

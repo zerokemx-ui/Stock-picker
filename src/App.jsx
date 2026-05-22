@@ -56,6 +56,9 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // 投資組合所有持股的即時盤中價格快照
+  const [portfolioLivePrices, setPortfolioLivePrices] = useState({});
+
   // 自訂選股策略狀態
   const [customStrategies, setCustomStrategies] = useState(() => {
     const saved = localStorage.getItem('tw_stock_custom_strategies');
@@ -258,6 +261,50 @@ export default function App() {
   useEffect(() => {
     fetchStocksData();
   }, []);
+
+  // 5.5. 批量同步模擬持股的即時價格數據 (每 15 秒自動輪詢)
+  const fetchPortfolioLivePrices = async () => {
+    if (!portfolio || portfolio.length === 0) {
+      setPortfolioLivePrices({});
+      return;
+    }
+    
+    const codes = portfolio.map(item => item.code).join(',');
+    try {
+      const response = await fetch(`/api/stocks/realtime?codes=${codes}`);
+      const resData = await response.json();
+      if (resData.success && Array.isArray(resData.data)) {
+        const priceMap = {};
+        resData.data.forEach(stock => {
+          priceMap[stock.Code] = {
+            price: parseFloat(stock.ClosingPrice),
+            change: parseFloat(stock.Change),
+            changePercent: parseFloat(stock.ChangePercent),
+            highest: parseFloat(stock.HighestPrice),
+            lowest: parseFloat(stock.LowestPrice),
+            open: parseFloat(stock.OpeningPrice),
+            volume: parseInt(stock.TradeVolume),
+            time: stock.Time,
+            isLive: true
+          };
+        });
+        setPortfolioLivePrices(priceMap);
+      }
+    } catch (err) {
+      console.error("無法同步投資組合即時報價:", err);
+    }
+  };
+
+  const portfolioCodesString = portfolio.map(p => p.code).join(',');
+  useEffect(() => {
+    fetchPortfolioLivePrices();
+    
+    const timer = setInterval(() => {
+      fetchPortfolioLivePrices();
+    }, 15000);
+    
+    return () => clearInterval(timer);
+  }, [portfolioCodesString]);
 
   // 6. 各種互動 Handlers
   const handleToggleWatchlist = (code) => {
@@ -549,6 +596,7 @@ export default function App() {
                 stocks={stocks} 
                 onSelectStock={handleSelectStock} 
                 portfolio={portfolio}
+                portfolioLivePrices={portfolioLivePrices}
                 onRemoveFromPortfolio={handleRemoveFromPortfolio}
                 onUpdatePortfolioLots={handleUpdatePortfolioLots}
               />

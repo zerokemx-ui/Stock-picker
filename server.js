@@ -233,13 +233,130 @@ app.post('/api/stocks/refresh', async (req, res) => {
   res.json({
     success: true,
     source: data === fallbackMockStocks ? 'fallback_mock' : 'twse_api',
+  res.json({
+    success: true,
+    source: data === fallbackMockStocks ? 'fallback_mock' : 'twse_api',
     timestamp: new Date(now).toISOString(),
     count: data.length,
     data: data
   });
 });
 
+// 獲取 TWSE MIS 即時行情交易資訊 API (自動處理 Session Cookie 握手)
+async function getTWSERealtimeData(codesString) {
+  if (!codesString) return { success: false, error: '未提供股票代號' };
+  
+  const codes = codesString.split(',').map(c => c.trim()).filter(Boolean);
+  if (codes.length === 0) return { success: false, error: '無效的股票代號' };
+  
+  // 將代號格式化為 tse_XXXX.tw 格式 (本資料庫皆為上市櫃主要股票)
+  const exChList = codes.map(code => `tse_${code}.tw`).join('|');
+  
+  try {
+    // 1. 先請求 fibest.jsp 以取得合法的 Session Cookie
+    const initialRes = await fetch('https://mis.twse.com.tw/stock/fibest.jsp?lang=zh_tw', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    
+    let cookie = '';
+    const setCookie = initialRes.headers.getSetCookie 
+      ? initialRes.headers.getSetCookie() 
+      : (initialRes.headers.get('set-cookie') ? [initialRes.headers.get('set-cookie')] : []);
+    
+    if (setCookie && setCookie.length > 0) {
+      cookie = setCookie.map(c => c.split(';')[0]).join('; ');
+    }
+    
+    // 2. 帶上 Cookie 請求真正的即時報價 API
+    const url = `https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=${exChList}&json=1&delay=0`;
+    const res = await fetch(url, {
+      headers: {
+        'Cookie': cookie,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://mis.twse.com.tw/stock/fibest.jsp?lang=zh_tw'
+      }
+    });
+    
+    if (!res.ok) throw new Error(`TWSE MIS API 響應錯誤: ${res.status}`);
+    const json = await res.json();
+    
+    if (!json || !Array.isArray(json.msgArray) || json.msgArray.length === 0) {
+      return { success: false, error: '證交所即時 API 未回傳有效數據，可能非交易時間或代號有誤' };
+    }
+    
+    // 3. 欄位映射與邏輯處理
+    const formattedData = json.msgArray.map(item => {
+      const yesterdayClose = parseFloat(item.y) || 0;
+      
+      // z 為當前撮合價，若尚未成交則嘗試取第一檔買入價 b 或賣出價 a，或開盤價，或昨收價
+      let livePrice = parseFloat(item.z);
+      if (isNaN(livePrice) || livePrice <= 0) {
+        if (item.b) {
+          const bids = item.b.split('_').map(parseFloat).filter(Boolean);
+          if (bids.length > 0) livePrice = bids[0];
+        }
+      }
+      if (isNaN(livePrice) || livePrice <= 0) {
+        if (item.a) {
+          const asks = item.a.split('_').map(parseFloat).filter(Boolean);
+          if (asks.length > 0) livePrice = asks[0];
+        }
+      }
+      if (isNaN(livePrice) || livePrice <= 0) {
+        livePrice = parseFloat(item.o) || yesterdayClose;
+      }
+      
+      const changeVal = livePrice - yesterdayClose;
+      const changePct = yesterdayClose > 0 ? (changeVal / yesterdayClose * 100) : 0;
+      
+      return {
+        Code: item.c,
+        Name: item.n,
+        ClosingPrice: livePrice.toFixed(2),
+        OpeningPrice: (parseFloat(item.o) || yesterdayClose).toFixed(2),
+        HighestPrice: (parseFloat(item.h) || livePrice).toFixed(2),
+        LowestPrice: (parseFloat(item.l) || livePrice).toFixed(2),
+        Change: changeVal.toFixed(2),
+        ChangePercent: changePct.toFixed(2),
+        TradeVolume: (parseInt(item.v) || 0).toString(), // 累積成交量 (張)
+        LimitUp: item.u ? parseFloat(item.u).toFixed(2) : '', // 漲停限制價
+        LimitDown: item.w ? parseFloat(item.w).toFixed(2) : '', // 跌停限制價
+        Time: item.t || '', // 最後撮合時間 (e.g. 13:30:00)
+        Source: 'twse_mis_live'
+      };
+    });
+    
+    return {
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: formattedData
+    };
+  } catch (error) {
+    console.error('後端即時行情請求錯誤:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+// 即時行情代理路由
+app.get('/api/stocks/realtime', async (req, res) => {
+  const codes = req.query.codes;
+  if (!codes) {
+    return res.status(400).json({ success: false, error: '缺少必填參數 codes (以逗號分隔)' });
+  }
+  
+  const result = await getTWSERealtimeData(codes);
+  if (result.success) {
+    res.json(result);
+  } else {
+    // 即使失敗也回傳 200 並帶上 success: false，方便前端進行優雅降級
+    res.json(result);
+  }
+});
+
 // Serve frontend in production (after npm run build)
+
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 

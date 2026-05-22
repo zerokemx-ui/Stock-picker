@@ -26,6 +26,7 @@ export default function Dashboard({
   stocks, 
   onSelectStock,
   portfolio = [],
+  portfolioLivePrices = {},
   onRemoveFromPortfolio,
   onUpdatePortfolioLots
 }) {
@@ -55,8 +56,10 @@ export default function Dashboard({
 
     const items = portfolio.map(item => {
       const liveStock = stocks.find(s => s.Code === item.code);
-      const currentPrice = liveStock ? parseFloat(liveStock.ClosingPrice) || 0 : item.buyPrice;
-      const changeVal = liveStock ? parseFloat(liveStock.Change) || 0 : 0;
+      const livePriceObj = portfolioLivePrices && portfolioLivePrices[item.code];
+      
+      const currentPrice = livePriceObj ? livePriceObj.price : (liveStock ? parseFloat(liveStock.ClosingPrice) || 0 : item.buyPrice);
+      const changeVal = livePriceObj ? livePriceObj.change : (liveStock ? parseFloat(liveStock.Change) || 0 : 0);
       const dividendYield = liveStock ? parseFloat(liveStock.DividendYield) || 0 : 0;
 
       const shares = item.buyLots * 1000;
@@ -96,7 +99,7 @@ export default function Dashboard({
       totalDividend,
       avgYieldOnCost
     };
-  }, [portfolio, stocks]);
+  }, [portfolio, stocks, portfolioLivePrices]);
 
   // 3. 市場多空情緒統計 (今日上漲、下跌、平盤數量)
   let riseCount = 0;
@@ -154,7 +157,15 @@ export default function Dashboard({
               <Briefcase size={20} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>💼 我的模擬投資組合 (Virtual Portfolio)</h3>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                💼 我的模擬投資組合 (Virtual Portfolio)
+                {portfolio.length > 0 && (
+                  <span className="live-badge" style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.25)', color: '#22c55e', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, letterSpacing: '0.5px' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block', animation: 'live-pulse 1.6s infinite' }}></span>
+                    即時更新中 (Live)
+                  </span>
+                )}
+              </h3>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
                 即時追蹤您的持股水位、未實現損益與存股被動年領息。
               </p>
@@ -484,6 +495,11 @@ export default function Dashboard({
       <style dangerouslySetInnerHTML={{__html: `
         .leader-item-row:hover {
           background: rgba(255, 255, 255, 0.05) !important;
+        }
+        @keyframes live-pulse {
+          0% { transform: scale(0.85); opacity: 0.6; }
+          50% { transform: scale(1.15); opacity: 1; }
+          100% { transform: scale(0.85); opacity: 0.6; }
         }
       `}} />
       
