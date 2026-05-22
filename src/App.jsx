@@ -221,8 +221,23 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      // 讀取相對路徑下的靜態資料庫檔案
-      const response = await fetch('./api/stocks.json');
+      let response;
+      
+      try {
+        // 先嘗試發送到 Express 後端伺服器 (若處於本機或 Full-stack 伺服器運行模式)
+        if (isRefresh) {
+          response = await fetch('/api/stocks/refresh', { method: 'POST' });
+        } else {
+          response = await fetch('/api/stocks');
+        }
+        if (!response.ok) {
+          throw new Error('Express endpoint returned non-OK status');
+        }
+      } catch (e) {
+        // 若在 GitHub Pages (Serverless) 等不支援後台運行的環境，則優雅降級讀取相對路徑下的靜態檔案
+        response = await fetch('./api/stocks.json');
+      }
+
       if (!response.ok) {
         throw new Error(`無法載入靜態資料庫 (HTTP status: ${response.status})`);
       }
