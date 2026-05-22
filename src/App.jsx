@@ -8,7 +8,8 @@ import {
   TrendingUp,
   RefreshCw, 
   AlertTriangle,
-  WifiOff
+  WifiOff,
+  Settings
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import StockFilter from './components/StockFilter';
@@ -77,6 +78,13 @@ export default function App() {
   const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [selectedStockCode, setSelectedStockCode] = useState(null);
+
+  // GitHub Actions 手動雲端觸發狀態
+  const [githubToken, setGithubToken] = useState(() => {
+    return localStorage.getItem('tw_github_token') || '';
+  });
+  const [isGithubPanelOpen, setIsGithubPanelOpen] = useState(false);
+  const [isTriggeringAction, setIsTriggeringAction] = useState(false);
 
   // 獲取所有獨特的產業類別
   const categories = useMemo(() => {
@@ -276,6 +284,38 @@ export default function App() {
   useEffect(() => {
     fetchStocksData();
   }, []);
+
+  // 5.2 手動觸發 GitHub Actions 雲端工作流
+  const handleTriggerWorkflow = async () => {
+    if (!githubToken) return;
+    setIsTriggeringAction(true);
+    try {
+      const response = await fetch('https://api.github.com/repos/zerokemx-ui/Stock-picker/actions/workflows/deploy.yml/dispatches', {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ref: 'main'
+        })
+      });
+
+      if (response.status === 204) {
+        showToast("⚡ 雲端更新指令已成功送出！請等待約 1-2 分鐘，雲端將自動更新數據。");
+        setIsGithubPanelOpen(false);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP status ${response.status}`);
+      }
+    } catch (err) {
+      console.error("觸發 Actions 失敗:", err);
+      showToast(`❌ 觸發雲端更新失敗: ${err.message}`);
+    } finally {
+      setIsTriggeringAction(false);
+    }
+  };
 
   // 5.5. 批量同步模擬持股的即時價格數據 (每 15 秒自動輪詢)
   const fetchPortfolioLivePrices = async () => {
@@ -503,6 +543,15 @@ export default function App() {
             <RefreshCw size={14} className={loading ? 'spin-anim' : ''} />
             同步行情
           </button>
+
+          <button 
+            onClick={() => setIsGithubPanelOpen(true)}
+            className="btn-secondary" 
+            style={{ padding: '0.6rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="設定雲端同步 (GitHub Actions)"
+          >
+            <Settings size={14} />
+          </button>
           
           <button 
             onClick={() => setIsWatchlistOpen(true)}
@@ -710,6 +759,103 @@ export default function App() {
           onToggleCompare={handleToggleCompare}
           onClose={() => setSelectedStockCode(null)}
         />
+      )}
+
+      {/* 雲端更新設定彈窗 */}
+      {isGithubPanelOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+          {/* 半透明背景遮罩 */}
+          <div 
+            onClick={() => setIsGithubPanelOpen(false)}
+            style={{ position: 'absolute', width: '100%', height: '100%', background: 'rgba(5, 8, 20, 0.75)', backdropFilter: 'blur(8px)' }}
+          />
+          
+          {/* 彈窗主體 */}
+          <div className="glass-panel" style={{ 
+            position: 'relative', 
+            width: '90%', 
+            maxWidth: '520px', 
+            maxHeight: '90vh', 
+            overflowY: 'auto',
+            background: 'var(--bg-secondary)', 
+            border: '1px solid var(--border-glass-hover)', 
+            boxShadow: '0 20px 50px rgba(0,0,0,0.6), var(--shadow-neon-blue)',
+            padding: '2rem',
+            animation: 'slide-up-fade 0.3s ease-out',
+            zIndex: 10001
+          }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="text-gradient-cyan">☁️ 雲端數據即時更新</span>
+              </h3>
+              <button 
+                onClick={() => setIsGithubPanelOpen(false)}
+                className="btn-icon"
+                style={{ fontSize: '1.2rem', padding: '0.2rem' }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              <p>
+                本網頁完全在您的瀏覽器（線上靜態 GitHub Pages）中運作，無須下載或安裝任何本地程式。
+              </p>
+              
+              <div style={{ padding: '0.75rem 1rem', background: 'rgba(56, 189, 248, 0.05)', borderLeft: '3px solid var(--accent-blue)', borderRadius: '4px', fontSize: '0.85rem' }}>
+                <strong>🔒 安全聲明：</strong>
+                本設定使用「個人瀏覽器儲存（localStorage）」，您的 Token 僅會直接與 GitHub API 通訊，絕對不會上傳至任何第三方伺服器，安全無輿。
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <label style={{ fontWeight: 600, color: 'var(--text-primary)' }}>步驟 1. 取得 GitHub 授權（PAT）</label>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                  請至 GitHub 生成一個存取權杖（Token），並勾選 <code>workflow</code> 權限，以允許此網頁發送更新請求。
+                </p>
+                <a 
+                  href="https://github.com/settings/tokens/new?description=Taiwan-Stock-Picker-Trigger&scopes=workflow" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--accent-blue)', textDecoration: 'underline', fontSize: '0.8rem', fontWeight: 600, width: 'fit-content' }}
+                >
+                  👉 點此前往 GitHub 自動生成 Token 頁面
+                </a>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <label htmlFor="github-token-input" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>步驟 2. 輸入您的 Token</label>
+                <input 
+                  id="github-token-input"
+                  type="password"
+                  value={githubToken}
+                  onChange={(e) => {
+                    setGithubToken(e.target.value);
+                    localStorage.setItem('tw_github_token', e.target.value);
+                  }}
+                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                  className="input-field"
+                  style={{ fontFamily: 'monospace' }}
+                />
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                <button 
+                  onClick={handleTriggerWorkflow}
+                  disabled={!githubToken || isTriggeringAction}
+                  className="btn-primary"
+                  style={{ width: '100%', justifyContent: 'center', padding: '0.85rem', background: !githubToken ? 'var(--bg-tertiary)' : undefined, color: !githubToken ? 'var(--text-muted)' : undefined, border: !githubToken ? '1px solid var(--border-glass)' : undefined, cursor: !githubToken ? 'not-allowed' : 'pointer', boxShadow: !githubToken ? 'none' : undefined }}
+                >
+                  <RefreshCw size={16} className={isTriggeringAction ? 'spin-anim' : ''} />
+                  {isTriggeringAction ? '正在傳送雲端請求...' : '⚡ 立即強制更新雲端數據 (Actions)'}
+                </button>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
+                  * 按下後會觸發 GitHub Actions 執行盤中行情抓取，整個過程約需 1-2 分鐘。完成後重新整理網頁即可看見最新數據！
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 全域美觀微調的 Toast 懸浮通知 */}
