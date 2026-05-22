@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -7,7 +7,13 @@ import {
   BarChart3, 
   Flame, 
   Award,
-  DollarSign
+  DollarSign,
+  Briefcase,
+  Trash2,
+  Plus,
+  Minus,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { 
   formatVolumeInChang, 
@@ -16,7 +22,15 @@ import {
   getChangeColorClass 
 } from '../utils/stockUtils';
 
-export default function Dashboard({ stocks, onSelectStock }) {
+export default function Dashboard({ 
+  stocks, 
+  onSelectStock,
+  portfolio = [],
+  onRemoveFromPortfolio,
+  onUpdatePortfolioLots
+}) {
+  const [isPortfolioCollapsed, setIsPortfolioCollapsed] = useState(false);
+
   // 1. 計算市場整體基本面統計
   const totalStocks = stocks.length;
   
@@ -25,13 +39,66 @@ export default function Dashboard({ stocks, onSelectStock }) {
   const avgPE = peStocks.length > 0 
     ? (peStocks.reduce((sum, s) => sum + parseFloat(s.PEratio), 0) / peStocks.length).toFixed(2)
     : 'N/A';
-    
+     
   // 計算平均殖利率
   const avgYield = totalStocks > 0
     ? (stocks.reduce((sum, s) => sum + parseFloat(s.DividendYield), 0) / totalStocks).toFixed(2)
     : '0.00';
 
-  // 2. 市場多空情緒統計 (今日上漲、下跌、平盤數量)
+  // 2. 模擬投資組合統計與明細計算
+  const portfolioStats = React.useMemo(() => {
+    if (!portfolio || portfolio.length === 0) return null;
+
+    let totalCost = 0;
+    let totalValue = 0;
+    let totalDividend = 0;
+
+    const items = portfolio.map(item => {
+      const liveStock = stocks.find(s => s.Code === item.code);
+      const currentPrice = liveStock ? parseFloat(liveStock.ClosingPrice) || 0 : item.buyPrice;
+      const changeVal = liveStock ? parseFloat(liveStock.Change) || 0 : 0;
+      const dividendYield = liveStock ? parseFloat(liveStock.DividendYield) || 0 : 0;
+
+      const shares = item.buyLots * 1000;
+      const cost = item.buyPrice * shares;
+      const value = currentPrice * shares;
+      const pnl = value - cost;
+      const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
+      const annualDiv = cost * (dividendYield / 100);
+
+      totalCost += cost;
+      totalValue += value;
+      totalDividend += annualDiv;
+
+      return {
+        ...item,
+        currentPrice,
+        cost,
+        value,
+        pnl,
+        pnlPct,
+        annualDiv,
+        changeVal,
+        dividendYield
+      };
+    });
+
+    const totalPnl = totalValue - totalCost;
+    const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
+    const avgYieldOnCost = totalCost > 0 ? (totalDividend / totalCost) * 100 : 0;
+
+    return {
+      items,
+      totalCost,
+      totalValue,
+      totalPnl,
+      totalPnlPct,
+      totalDividend,
+      avgYieldOnCost
+    };
+  }, [portfolio, stocks]);
+
+  // 3. 市場多空情緒統計 (今日上漲、下跌、平盤數量)
   let riseCount = 0;
   let fallCount = 0;
   let flatCount = 0;
@@ -78,7 +145,184 @@ export default function Dashboard({ stocks, onSelectStock }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      
+
+      {/* 💼 模擬投資組合模組 */}
+      <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--accent-blue)', position: 'relative' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isPortfolioCollapsed ? '0' : '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }} onClick={() => setIsPortfolioCollapsed(!isPortfolioCollapsed)}>
+            <div style={{ padding: '0.4rem', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--accent-blue)', borderRadius: '8px' }}>
+              <Briefcase size={20} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>💼 我的模擬投資組合 (Virtual Portfolio)</h3>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                即時追蹤您的持股水位、未實現損益與存股被動年領息。
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setIsPortfolioCollapsed(!isPortfolioCollapsed)} 
+            className="btn-icon"
+            style={{ padding: '0.4rem', color: 'var(--text-secondary)' }}
+          >
+            {isPortfolioCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+          </button>
+        </div>
+
+        {!isPortfolioCollapsed && (
+          <>
+            {!portfolioStats ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2.5rem 1.5rem', background: 'rgba(0,0,0,0.15)', borderRadius: '12px', border: '1px dashed var(--border-glass)', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', maxWidth: '550px', lineHeight: '1.6' }}>
+                  💡 <strong>您目前還沒有任何模擬持股喔！</strong><br />
+                  請至「<strong>進階智慧選股</strong>」頁面點選您心儀的股票，開啟個股分析面板，並在最下方的 **「個股損益除權息試算機」** 中輸入張數，點選 **「模擬買入此股」**，即可啟動您的個人投資組合！
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {/* 投資組合四大數據卡 */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                  
+                  <div className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem 1.25rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>投資本金</div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 800, fontFamily: 'Outfit', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                      $ {Math.round(portfolioStats.totalCost).toLocaleString('zh-TW')} <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>元</span>
+                    </div>
+                  </div>
+
+                  <div className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem 1.25rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>組合市值</div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 800, fontFamily: 'Outfit', color: 'var(--text-primary)', marginTop: '0.25rem' }}>
+                      $ {Math.round(portfolioStats.totalValue).toLocaleString('zh-TW')} <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>元</span>
+                    </div>
+                  </div>
+
+                  <div className="glass-card" style={{ 
+                    background: 'rgba(255,255,255,0.02)', 
+                    padding: '1rem 1.25rem',
+                    border: portfolioStats.totalPnl >= 0 ? '1px solid rgba(255, 77, 77, 0.15)' : '1px solid rgba(0, 230, 118, 0.15)',
+                    boxShadow: portfolioStats.totalPnl >= 0 ? '0 0 15px rgba(255, 77, 77, 0.05)' : '0 0 15px rgba(0, 230, 118, 0.05)'
+                  }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>未實現損益</div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 900, fontFamily: 'Outfit', marginTop: '0.25rem', display: 'flex', alignItems: 'baseline', gap: '4px' }} className={portfolioStats.totalPnl >= 0 ? 'up-text' : 'down-text'}>
+                      {portfolioStats.totalPnl >= 0 ? '+' : ''}{Math.round(portfolioStats.totalPnl).toLocaleString('zh-TW')}
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>
+                        ({portfolioStats.totalPnl >= 0 ? '+' : ''}{portfolioStats.totalPnlPct.toFixed(2)}%)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem 1.25rem', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>預估被動年息收</div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 800, fontFamily: 'Outfit', color: 'var(--accent-gold)', marginTop: '0.25rem', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                      $ {Math.round(portfolioStats.totalDividend).toLocaleString('zh-TW')}
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                        (殖利率 {portfolioStats.avgYieldOnCost.toFixed(2)}%)
+                      </span>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* 持股明細表格 */}
+                <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid var(--border-glass)' }}>
+                  <table className="stock-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
+                    <thead>
+                      <tr style={{ background: 'rgba(14, 19, 38, 0.65)' }}>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>股票代碼/名稱</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>庫存張數</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>買入均價 / 市價</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>持股成本 / 市值</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>未實現損益</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>年估配息 (殖利率)</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'center', width: '90px' }}>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {portfolioStats.items.map(item => {
+                        const isUp = item.pnl >= 0;
+                        const changeClass = isUp ? 'up-text' : 'down-text';
+
+                        return (
+                          <tr key={item.code} className="table-row-hover" style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', background: 'rgba(14, 19, 38, 0.2)' }}>
+                            <td 
+                              style={{ padding: '0.85rem 1rem', cursor: 'pointer' }}
+                              onClick={() => onSelectStock(item.code)}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontFamily: 'Outfit', fontWeight: 800, fontSize: '0.85rem', color: 'var(--accent-blue)', background: 'rgba(56,189,248,0.08)', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+                                  {item.code}
+                                </span>
+                                <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{item.name}</span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                                <button 
+                                  onClick={() => onUpdatePortfolioLots(item.code, -1)}
+                                  style={{ padding: '0.2rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                                  title="減少 1 張"
+                                >
+                                  <Minus size={11} />
+                                </button>
+                                <span style={{ fontFamily: 'Outfit', fontWeight: 700, fontSize: '0.9rem', minWidth: '35px', textAlign: 'center' }}>
+                                  {item.buyLots} 張
+                                </span>
+                                <button 
+                                  onClick={() => onUpdatePortfolioLots(item.code, 1)}
+                                  style={{ padding: '0.2rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                                  title="加碼 1 張"
+                                >
+                                  <Plus size={11} />
+                                </button>
+                              </div>
+                            </td>
+                            <td style={{ padding: '0.85rem 1rem', textAlign: 'right', fontFamily: 'Outfit', fontSize: '0.88rem' }}>
+                              <span style={{ color: 'var(--text-muted)' }}>{item.buyPrice.toFixed(2)}</span>
+                              <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 6px' }}>/</span>
+                              <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>{item.currentPrice.toFixed(2)}</span>
+                            </td>
+                            <td style={{ padding: '0.85rem 1rem', textAlign: 'right', fontFamily: 'Outfit', fontSize: '0.88rem' }}>
+                              <span style={{ color: 'var(--text-muted)' }}>${Math.round(item.cost).toLocaleString()}</span>
+                              <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 6px' }}>/</span>
+                              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>${Math.round(item.value).toLocaleString()}</span>
+                            </td>
+                            <td style={{ padding: '0.85rem 1rem', textAlign: 'right', fontFamily: 'Outfit', fontSize: '0.88rem' }} className={changeClass}>
+                              <span style={{ fontWeight: 700 }}>
+                                {isUp ? '+' : ''}{Math.round(item.pnl).toLocaleString()}
+                              </span>
+                              <div style={{ fontSize: '0.72rem', fontWeight: 600 }}>
+                                {isUp ? '+' : ''}{item.pnlPct.toFixed(2)}%
+                              </div>
+                            </td>
+                            <td style={{ padding: '0.85rem 1rem', textAlign: 'right', fontSize: '0.85rem' }}>
+                              <span style={{ color: 'var(--accent-gold)', fontWeight: 700, fontFamily: 'Outfit' }}>
+                                ${Math.round(item.annualDiv).toLocaleString()}
+                              </span>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'Outfit' }}>
+                                ({item.dividendYield.toFixed(2)}%)
+                              </div>
+                            </td>
+                            <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
+                              <button 
+                                onClick={() => onRemoveFromPortfolio(item.code)}
+                                style={{ padding: '0.35rem', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '6px', color: '#ff4d4d', cursor: 'pointer' }}
+                                title="一鍵結清/移出投資組合"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
       {/* 頂部市場數據卡片群 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
         

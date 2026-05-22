@@ -21,6 +21,7 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -40,6 +41,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -63,6 +65,7 @@ export default function StockDetail({
   stocks,
   watchlist,
   compareList,
+  onAddToPortfolio,
   onToggleWatchlist,
   onToggleCompare,
   onClose
@@ -239,12 +242,11 @@ export default function StockDetail({
   // 6. 生成 30 日歷史模擬走勢
   const chartData = useMemo(() => {
     const rand = createSeededRandom(stock.Code);
-    const simulatedPrices = [];
-    const labels = [];
+    const ohlcData = [];
     
     let tempPrice = closingPrice;
     // 基於今日漲跌幅計算波動度
-    const volatility = Math.max(0.012, Math.min(0.06, Math.abs(changeVal) / closingPrice || 0.02));
+    const volatility = Math.max(0.012, Math.min(0.05, Math.abs(changeVal) / closingPrice || 0.02));
     
     // 生成 30 個交易日的日期
     const today = new Date();
@@ -267,24 +269,57 @@ export default function StockDetail({
       dayOffset++;
     }
 
-    // 反向隨機漫步回推 30 天
+    // 基於成交量 TradeVolume 取得一個基準日成交量 (以張為單位)
+    const baseVolume = (parseInt(stock.TradeVolume) || 5000000) / 1000 / 30; // 每日平均張數
+
+    // 反向隨機漫步回推 30 天，然後正向生成 ohlcData 以維持時間順序
+    const tempCloses = [];
+    let curPrice = tempPrice;
     for (let i = 0; i < 30; i++) {
-      simulatedPrices.unshift(tempPrice);
-      // 生成圍繞當前趨勢的隨機數
+      tempCloses.unshift(curPrice);
       const factor = (rand() - 0.485) * 2; // -0.97 至 1.03
       const dailyChg = factor * volatility;
-      tempPrice = tempPrice / (1 + dailyChg);
+      curPrice = curPrice / (1 + dailyChg);
     }
 
-    const isPriceUp = closingPrice >= simulatedPrices[0];
+    // 現在正向為每天生成完整的 OHLC 與成交量
+    for (let i = 0; i < 30; i++) {
+      const close = tempCloses[i];
+      const prevClose = i > 0 ? tempCloses[i - 1] : close * 0.98;
+      
+      // 開盤價在昨日收盤價附近波動
+      const open = prevClose * (1 + (rand() - 0.5) * volatility * 0.4);
+      
+      // 最高、最低價
+      const maxOC = Math.max(open, close);
+      const minOC = Math.min(open, close);
+      const high = maxOC * (1 + rand() * volatility * 0.5);
+      const low = minOC * (1 - rand() * volatility * 0.5);
+      
+      // 成交量：當天漲跌幅度越大，成交量可能越大 (放量)
+      const volChangeFactor = 1 + Math.abs(close - open) / (open || 1) * 10;
+      const vol = baseVolume * (0.6 + rand() * 0.8) * volChangeFactor;
+
+      ohlcData.push({
+        open: parseFloat(open.toFixed(2)),
+        high: parseFloat(high.toFixed(2)),
+        low: parseFloat(low.toFixed(2)),
+        close: parseFloat(close.toFixed(2)),
+        volume: Math.round(vol),
+        isUp: close >= open
+      });
+    }
+
+    const isPriceUp = closingPrice >= ohlcData[0].close;
     const accentColor = isPriceUp ? 'var(--stock-up)' : 'var(--stock-down)';
     
     return {
       labels: dates,
+      ohlc: ohlcData,
       datasets: [
         {
           label: '收盤價',
-          data: simulatedPrices.map(p => parseFloat(p.toFixed(2))),
+          data: ohlcData.map(d => d.close),
           borderColor: accentColor,
           borderWidth: 3,
           pointRadius: 0,
@@ -294,16 +329,27 @@ export default function StockDetail({
           pointHoverBorderWidth: 2,
           tension: 0.35,
           fill: true,
-          // 金融科技感的霓虹漸層填充效果
+          yAxisID: 'yPrice',
           backgroundColor: (context) => {
             const chart = context.chart;
             const { ctx, chartArea } = chart;
             if (!chartArea) return null;
             const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            gradient.addColorStop(0, isPriceUp ? 'rgba(255, 77, 77, 0.25)' : 'rgba(0, 230, 118, 0.25)');
+            gradient.addColorStop(0, isPriceUp ? 'rgba(255, 77, 77, 0.2)' : 'rgba(0, 230, 118, 0.2)');
             gradient.addColorStop(1, 'rgba(7, 10, 19, 0)');
             return gradient;
           }
+        },
+        {
+          label: '成交量',
+          data: ohlcData.map(d => d.volume),
+          type: 'bar',
+          yAxisID: 'yVolume',
+          backgroundColor: ohlcData.map(d => d.isUp ? 'rgba(255, 77, 77, 0.25)' : 'rgba(0, 230, 118, 0.25)'),
+          hoverBackgroundColor: ohlcData.map(d => d.isUp ? 'rgba(255, 77, 77, 0.45)' : 'rgba(0, 230, 118, 0.45)'),
+          borderColor: ohlcData.map(d => d.isUp ? 'rgba(255, 77, 77, 0.4)' : 'rgba(0, 230, 118, 0.4)'),
+          borderWidth: 1,
+          barThickness: 6
         }
       ]
     };
@@ -320,9 +366,25 @@ export default function StockDetail({
         bodyColor: '#cbd5e1',
         borderColor: 'rgba(255, 255, 255, 0.1)',
         borderWidth: 1,
-        padding: 10,
+        padding: 12,
         callbacks: {
-          label: (context) => ` 收盤價: ${context.parsed.y.toFixed(2)} 元`
+          label: (context) => {
+            const index = context.dataIndex;
+            const dataPoint = chartData.ohlc[index];
+            if (!dataPoint) return '';
+            
+            // 對於收盤價折線，顯示完整的 OHLC
+            if (context.datasetIndex === 0) {
+              return [
+                ` 收盤價: ${dataPoint.close.toFixed(2)} 元`,
+                ` 開盤價: ${dataPoint.open.toFixed(2)} 元`,
+                ` 最高價: ${dataPoint.high.toFixed(2)} 元`,
+                ` 最低價: ${dataPoint.low.toFixed(2)} 元`
+              ];
+            } else {
+              return ` 成交量: ${dataPoint.volume.toLocaleString()} 張`;
+            }
+          }
         }
       }
     },
@@ -331,9 +393,26 @@ export default function StockDetail({
         grid: { display: false },
         ticks: { color: '#64748b', font: { size: 10 } }
       },
-      y: {
+      yPrice: {
+        type: 'linear',
+        position: 'left',
         grid: { color: 'rgba(255, 255, 255, 0.03)' },
-        ticks: { color: '#64748b', font: { size: 10 } }
+        ticks: { 
+          color: '#cbd5e1', 
+          font: { size: 10 },
+          callback: (value) => `${value.toFixed(1)}元`
+        }
+      },
+      yVolume: {
+        type: 'linear',
+        position: 'right',
+        grid: { display: false },
+        ticks: { 
+          color: '#64748b', 
+          font: { size: 9 },
+          callback: (value) => `${Math.round(value)}張`
+        },
+        max: Math.max(...(chartData.ohlc ? chartData.ohlc.map(d => d.volume) : [1000])) * 3.3
       }
     }
   };
@@ -887,6 +966,32 @@ export default function StockDetail({
                 </div>
               </div>
 
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.5rem' }}>
+              <button 
+                onClick={() => onAddToPortfolio(stock.Code, closingPrice, buyLots)}
+                className="btn-primary"
+                style={{ 
+                  width: '100%', 
+                  padding: '0.85rem 2rem', 
+                  fontSize: '1rem', 
+                  fontWeight: 800, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '0.5rem',
+                  background: 'linear-gradient(135deg, var(--accent-blue) 0%, #1e40af 100%)',
+                  boxShadow: '0 4px 20px rgba(56, 189, 248, 0.3)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Coins size={18} />
+                💼 模擬買入此股，加入我的投資組合 (以現價 {closingPrice.toFixed(2)} 元買入 {buyLots} 張)
+              </button>
             </div>
 
           </div>

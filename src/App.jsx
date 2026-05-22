@@ -50,6 +50,18 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // 模擬投資組合狀態
+  const [portfolio, setPortfolio] = useState(() => {
+    const saved = localStorage.getItem('tw_stock_portfolio');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // 自訂選股策略狀態
+  const [customStrategies, setCustomStrategies] = useState(() => {
+    const saved = localStorage.getItem('tw_stock_custom_strategies');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // 3. 篩選與排序狀態
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -77,6 +89,121 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('tw_stock_compare', JSON.stringify(compareList));
   }, [compareList]);
+
+  useEffect(() => {
+    localStorage.setItem('tw_stock_portfolio', JSON.stringify(portfolio));
+  }, [portfolio]);
+
+  useEffect(() => {
+    localStorage.setItem('tw_stock_custom_strategies', JSON.stringify(customStrategies));
+  }, [customStrategies]);
+
+  // 合併預設與自訂策略
+  const allStrategies = useMemo(() => {
+    const combined = { ...PRESET_STRATEGIES };
+    customStrategies.forEach(strat => {
+      combined[strat.id] = {
+        id: strat.id,
+        name: strat.name,
+        desc: strat.desc,
+        criteriaDesc: strat.criteriaDesc,
+        isCustom: true,
+        criteria: strat.criteria,
+        filter: (stock) => {
+          const price = parseFloat(stock.ClosingPrice) || 0;
+          const pe = stock.PEratio !== '' ? parseFloat(stock.PEratio) : null;
+          const pb = stock.PBratio !== '' ? parseFloat(stock.PBratio) : null;
+          const yieldPct = parseFloat(stock.DividendYield) || 0;
+
+          const c = strat.criteria;
+          if (c.minPrice && price < parseFloat(c.minPrice)) return false;
+          if (c.maxPrice && price > parseFloat(c.maxPrice)) return false;
+          if (c.minPE) {
+            if (pe === null || pe < parseFloat(c.minPE)) return false;
+          }
+          if (c.maxPE) {
+            if (pe === null || pe > parseFloat(c.maxPE)) return false;
+          }
+          if (c.minYield && yieldPct < parseFloat(c.minYield)) return false;
+          if (c.maxYield && yieldPct > parseFloat(c.maxYield)) return false;
+          if (c.minPB) {
+            if (pb === null || pb < parseFloat(c.minPB)) return false;
+          }
+          if (c.maxPB) {
+            if (pb === null || pb > parseFloat(c.maxPB)) return false;
+          }
+          return true;
+        }
+      };
+    });
+    return combined;
+  }, [customStrategies]);
+
+  // 投資組合操作 Handlers
+  const handleAddToPortfolio = (code, buyPrice, buyLots) => {
+    const targetStock = stocks.find(s => s.Code === code);
+    if (!targetStock) return;
+    
+    setPortfolio(prev => {
+      const existingIdx = prev.findIndex(item => item.code === code);
+      if (existingIdx > -1) {
+        const existing = prev[existingIdx];
+        const newLots = existing.buyLots + buyLots;
+        const newBuyPrice = ((existing.buyPrice * existing.buyLots) + (buyPrice * buyLots)) / newLots;
+        const updated = [...prev];
+        updated[existingIdx] = {
+          ...existing,
+          buyLots: newLots,
+          buyPrice: parseFloat(newBuyPrice.toFixed(2)),
+          date: new Date().toLocaleDateString('zh-TW')
+        };
+        showToast(`💼 已加碼 ${targetStock.Name}，累計持股：${newLots} 張`);
+        return updated;
+      } else {
+        showToast(`💼 已將 ${targetStock.Name} 納入模擬投資組合`);
+        return [...prev, {
+          id: code,
+          code,
+          name: targetStock.Name,
+          buyPrice: parseFloat(buyPrice),
+          buyLots: parseInt(buyLots),
+          date: new Date().toLocaleDateString('zh-TW')
+        }];
+      }
+    });
+  };
+
+  const handleRemoveFromPortfolio = (code) => {
+    setPortfolio(prev => prev.filter(item => item.code !== code));
+    showToast(`💼 已從投資組合中賣出/移除股票：${code}`);
+  };
+
+  const handleUpdatePortfolioLots = (code, delta) => {
+    setPortfolio(prev => {
+      return prev.map(item => {
+        if (item.code === code) {
+          const newLots = item.buyLots + delta;
+          if (newLots <= 0) return null;
+          return { ...item, buyLots: newLots };
+        }
+        return item;
+      }).filter(Boolean);
+    });
+  };
+
+  // 自訂策略操作 Handlers
+  const handleAddCustomStrategy = (newStrat) => {
+    setCustomStrategies(prev => [...prev, newStrat]);
+    showToast(`🛠️ 已新增自訂策略：${newStrat.name}`);
+  };
+
+  const handleDeleteCustomStrategy = (id) => {
+    setCustomStrategies(prev => prev.filter(s => s.id !== id));
+    if (activeStrategy === id) {
+      handleResetFilters();
+    }
+    showToast(`🛠️ 已刪除自訂策略`);
+  };
 
   // 彈出 Toast 訊息輔助函式
   const showToast = (msg) => {
@@ -197,9 +324,9 @@ export default function App() {
       result = result.filter(s => s.Category === selectedCategory);
     }
 
-    // 預設選股策略篩選
-    if (activeStrategy && PRESET_STRATEGIES[activeStrategy]) {
-      const strategy = PRESET_STRATEGIES[activeStrategy];
+    // 預設與自訂選股策略篩選
+    if (activeStrategy && allStrategies[activeStrategy]) {
+      const strategy = allStrategies[activeStrategy];
       result = result.filter(strategy.filter);
     }
 
@@ -263,7 +390,7 @@ export default function App() {
     }
 
     return result;
-  }, [stocks, filters, selectedCategory, activeStrategy, sortConfig]);
+  }, [stocks, filters, selectedCategory, activeStrategy, allStrategies, sortConfig]);
 
   // 當篩選條件變動時，重設分頁至第一頁
   useEffect(() => {
@@ -418,7 +545,13 @@ export default function App() {
             
             {/* Tab 1: 市場總覽儀表板 */}
             {activeTab === 'dashboard' && (
-              <Dashboard stocks={stocks} onSelectStock={handleSelectStock} />
+              <Dashboard 
+                stocks={stocks} 
+                onSelectStock={handleSelectStock} 
+                portfolio={portfolio}
+                onRemoveFromPortfolio={handleRemoveFromPortfolio}
+                onUpdatePortfolioLots={handleUpdatePortfolioLots}
+              />
             )}
 
             {/* Tab 2: 進階篩選與表格 */}
@@ -433,15 +566,18 @@ export default function App() {
                   categories={categories}
                   selectedCategory={selectedCategory}
                   setSelectedCategory={setSelectedCategory}
+                  allStrategies={allStrategies}
+                  onAddCustomStrategy={handleAddCustomStrategy}
+                  onDeleteCustomStrategy={handleDeleteCustomStrategy}
                 />
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                     符合篩選條件股票：<span style={{ color: 'var(--accent-blue)', fontWeight: 700 }}>{filteredStocks.length}</span> 檔
                   </div>
-                  {activeStrategy && (
+                  {activeStrategy && allStrategies[activeStrategy] && (
                     <div style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', background: 'rgba(168, 85, 247, 0.15)', color: 'var(--accent-purple)', borderRadius: '4px', fontWeight: 600 }}>
-                      策略啟用中：{PRESET_STRATEGIES[activeStrategy].name}
+                      策略啟用中：{allStrategies[activeStrategy].name}
                     </div>
                   )}
                 </div>
@@ -505,6 +641,8 @@ export default function App() {
           stocks={stocks}
           watchlist={watchlist}
           compareList={compareList}
+          portfolio={portfolio}
+          onAddToPortfolio={handleAddToPortfolio}
           onToggleWatchlist={handleToggleWatchlist}
           onToggleCompare={handleToggleCompare}
           onClose={() => setSelectedStockCode(null)}

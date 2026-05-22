@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, 
   ArrowLeftRight, 
@@ -7,12 +7,31 @@ import {
   Plus, 
   ArrowUpRight 
 } from 'lucide-react';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import { 
   formatVolumeInChang, 
   formatValueInYi, 
   calculateChangeRate, 
   getChangeColorClass 
 } from '../utils/stockUtils';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function StockCompare({ 
   stocks, 
@@ -22,6 +41,102 @@ export default function StockCompare({
 }) {
   const [calcStockCode, setCalcStockCode] = useState('');
   const [numChang, setNumChang] = useState(1); // 預設 1 張
+  const [activeCompareMetric, setActiveCompareMetric] = useState('PE');
+
+  // 計算對比圖表的資料
+  const barChartData = useMemo(() => {
+    const labels = compareStocks.map(s => `${s.Name} (${s.Code})`);
+    let data = [];
+    let label = '';
+    let color = 'rgba(56, 189, 248, 0.2)';
+    let borderColor = 'var(--accent-blue)';
+    let hoverColor = 'rgba(56, 189, 248, 0.4)';
+
+    if (activeCompareMetric === 'PE') {
+      data = compareStocks.map(s => s.PEratio !== '' ? parseFloat(s.PEratio) : 0);
+      label = '本益比 PE (倍)';
+      color = 'rgba(56, 189, 248, 0.2)';
+      borderColor = 'var(--accent-blue)';
+      hoverColor = 'rgba(56, 189, 248, 0.4)';
+    } else if (activeCompareMetric === 'PB') {
+      data = compareStocks.map(s => s.PBratio !== '' ? parseFloat(s.PBratio) : 0);
+      label = '股價淨值比 PB (倍)';
+      color = 'rgba(168, 85, 247, 0.2)';
+      borderColor = 'var(--accent-purple)';
+      hoverColor = 'rgba(168, 85, 247, 0.4)';
+    } else if (activeCompareMetric === 'Yield') {
+      data = compareStocks.map(s => parseFloat(s.DividendYield) || 0);
+      label = '殖利率 Yield (%)';
+      color = 'rgba(245, 158, 11, 0.2)';
+      borderColor = 'var(--accent-gold)';
+      hoverColor = 'rgba(245, 158, 11, 0.4)';
+    }
+
+    return {
+      labels,
+      datasets: [{
+        label,
+        data,
+        backgroundColor: (context) => {
+          const chart = context.chart;
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return color;
+          const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+          if (activeCompareMetric === 'PE') {
+            gradient.addColorStop(0, 'rgba(56, 189, 248, 0.05)');
+            gradient.addColorStop(1, 'rgba(56, 189, 248, 0.65)');
+          } else if (activeCompareMetric === 'PB') {
+            gradient.addColorStop(0, 'rgba(168, 85, 247, 0.05)');
+            gradient.addColorStop(1, 'rgba(168, 85, 247, 0.65)');
+          } else if (activeCompareMetric === 'Yield') {
+            gradient.addColorStop(0, 'rgba(245, 158, 11, 0.05)');
+            gradient.addColorStop(1, 'rgba(245, 158, 11, 0.65)');
+          }
+          return gradient;
+        },
+        borderColor: borderColor,
+        borderWidth: 2,
+        borderRadius: 8,
+        hoverBackgroundColor: hoverColor,
+        hoverBorderColor: borderColor,
+        hoverBorderWidth: 3,
+        barThickness: 32,
+      }]
+    };
+  }, [compareStocks, activeCompareMetric]);
+
+  const barChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(14, 19, 38, 0.95)',
+        titleColor: '#f8fafc',
+        bodyColor: '#cbd5e1',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        padding: 12,
+        callbacks: {
+          label: (context) => {
+            const val = context.parsed.y;
+            const unit = activeCompareMetric === 'Yield' ? '%' : ' 倍';
+            return ` ${context.dataset.label.split(' ')[0]}: ${val.toFixed(2)}${unit}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: '#cbd5e1', font: { size: 11, weight: 'bold' } }
+      },
+      y: {
+        grid: { color: 'rgba(255, 255, 255, 0.03)' },
+        ticks: { color: '#64748b', font: { size: 10 } }
+      }
+    }
+  };
 
   // 1. 取得當前對比股票的完整數據
   const compareStocks = stocks.filter(s => compareList.includes(s.Code));
@@ -266,6 +381,49 @@ export default function StockCompare({
             )}
           </div>
 
+        </div>
+      )}
+
+      {compareStocks.length > 0 && (
+        <div className="glass-card" style={{ padding: '1.75rem 2rem', animation: 'slide-up-fade 0.3s ease-out' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ArrowLeftRight size={18} style={{ color: 'var(--accent-blue)' }} />
+              📊 多股基本面指標視覺化對比圖
+            </h3>
+            
+            {/* 指標切換按鈕群 */}
+            <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              {[
+                { id: 'PE', label: '本益比 PE', color: 'var(--accent-blue)' },
+                { id: 'PB', label: '股價淨值比 PB', color: 'var(--accent-purple)' },
+                { id: 'Yield', label: '殖利率 Yield (%)', color: 'var(--accent-gold)' }
+              ].map(metric => (
+                <button
+                  key={metric.id}
+                  onClick={() => setActiveCompareMetric(metric.id)}
+                  style={{
+                    padding: '0.4rem 0.85rem',
+                    fontSize: '0.8rem',
+                    fontWeight: activeCompareMetric === metric.id ? 800 : 500,
+                    background: activeCompareMetric === metric.id ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                    color: activeCompareMetric === metric.id ? metric.color : 'var(--text-secondary)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: activeCompareMetric === metric.id ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
+                  }}
+                >
+                  {metric.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ height: '300px', position: 'relative' }}>
+            <Bar data={barChartData} options={barChartOptions} />
+          </div>
         </div>
       )}
       
