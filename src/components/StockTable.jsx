@@ -6,7 +6,8 @@ import {
   ChevronRight, 
   ArrowUpDown, 
   ArrowUp, 
-  ArrowDown 
+  ArrowDown,
+  Info
 } from 'lucide-react';
 import { 
   formatVolumeInChang, 
@@ -23,7 +24,8 @@ export default function StockTable({
   sortConfig,
   setSortConfig,
   currentPage,
-  setCurrentPage
+  setCurrentPage,
+  onOpenDetail
 }) {
   const ITEMS_PER_PAGE = 15;
 
@@ -103,12 +105,23 @@ export default function StockTable({
                     
                     {/* 代號 */}
                     <td data-label="證券代號">
-                      <span className="stock-code">{stock.Code}</span>
+                      <span 
+                        onClick={() => onOpenDetail && onOpenDetail(stock.Code)}
+                        className="stock-code stock-clickable"
+                        title="點擊查看詳細分析"
+                      >
+                        {stock.Code}
+                      </span>
                     </td>
                     
                     {/* 名稱 */}
                     <td data-label="證券名稱">
-                      <div className="stock-name-cell" style={{ fontWeight: 700 }}>
+                      <div 
+                        onClick={() => onOpenDetail && onOpenDetail(stock.Code)}
+                        className="stock-name-cell stock-clickable" 
+                        style={{ fontWeight: 700 }}
+                        title="點擊查看詳細分析"
+                      >
                         {stock.Name}
                       </div>
                     </td>
@@ -152,6 +165,16 @@ export default function StockTable({
                     <td data-label="操作" style={{ textAlign: 'center' }}>
                       <div className="table-actions" style={{ justifyContent: 'center' }}>
                         
+                        {/* 分析按鈕 */}
+                        <button 
+                          onClick={() => onOpenDetail && onOpenDetail(stock.Code)} 
+                          className="btn-icon active-compare"
+                          style={{ color: 'var(--accent-blue)', borderColor: 'rgba(56, 189, 248, 0.2)' }}
+                          title="查看詳細個股分析與試算"
+                        >
+                          <Info size={16} />
+                        </button>
+
                         {/* 自選按鈕 */}
                         <button 
                           onClick={() => onToggleWatchlist(stock.Code)} 

@@ -16,6 +16,7 @@ import StockTable from './components/StockTable';
 import StockCharts from './components/StockCharts';
 import StockCompare from './components/StockCompare';
 import Watchlist from './components/Watchlist';
+import StockDetail from './components/StockDetail';
 import { PRESET_STRATEGIES } from './utils/stockUtils';
 
 const DEFAULT_FILTERS = {
@@ -60,6 +61,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'table', 'charts', 'compare'
   const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [selectedStockCode, setSelectedStockCode] = useState(null);
 
   // 獲取所有獨特的產業類別
   const categories = useMemo(() => {
@@ -172,7 +174,7 @@ export default function App() {
     showToast("🔄 已重設所有篩選與搜尋條件");
   };
 
-  // 當使用者在儀表板或圖表中點擊某檔股票時，自動填入搜尋並切換到表格
+  // 當使用者在儀表板或圖表中點擊某檔股票時，自動填入搜尋並切換到表格，並開啟詳細分析彈窗
   const handleSelectStock = (code) => {
     setFilters(prev => ({
       ...prev,
@@ -182,7 +184,8 @@ export default function App() {
     setActiveStrategy(null);
     setCurrentPage(1);
     setActiveTab('table');
-    showToast(`🔍 已為您定位股票：${code}`);
+    setSelectedStockCode(code);
+    showToast(`🔍 已為您定位並開啟個股分析：${code}`);
   };
 
   // 7. 計算多重篩選後的股票列表
@@ -453,6 +456,7 @@ export default function App() {
                   setSortConfig={setSortConfig}
                   currentPage={currentPage}
                   setCurrentPage={setCurrentPage}
+                  onOpenDetail={handleSelectStock}
                 />
               </>
             )}
@@ -491,6 +495,19 @@ export default function App() {
         <div 
           onClick={() => setIsWatchlistOpen(false)}
           style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 999 }}
+        />
+      )}
+
+      {/* 個股詳細分析彈窗面板 */}
+      {selectedStockCode && (
+        <StockDetail 
+          stockCode={selectedStockCode}
+          stocks={stocks}
+          watchlist={watchlist}
+          compareList={compareList}
+          onToggleWatchlist={handleToggleWatchlist}
+          onToggleCompare={handleToggleCompare}
+          onClose={() => setSelectedStockCode(null)}
         />
       )}
 

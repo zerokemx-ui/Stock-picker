@@ -727,3 +727,42 @@ h1, h2, h3, h4 {
     justify-content: flex-end;
   }
 }
+
+/* ==========================================================================
+   新增個股詳細分析彈窗 (StockDetail Modal) 樣式
+   ========================================================================== */
+
+@keyframes slide-up-fade {
+  0% { 
+    transform: translateY(20px); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+.stock-clickable {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stock-clickable:hover {
+  color: var(--accent-blue) !important;
+  text-shadow: var(--shadow-neon-blue);
+}
+
+.glass-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.glass-panel::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.glass-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-blue);
+}
+
