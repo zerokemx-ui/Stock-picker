@@ -224,12 +224,34 @@ export default function App() {
     }, 3000);
   };
 
+  const triggerGithubWorkflow = async (token) => {
+    const response = await fetch('https://api.github.com/repos/zerokemx-ui/Stock-picker/actions/workflows/deploy.yml/dispatches', {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ref: 'main' })
+    });
+
+    if (response.status !== 204) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP status ${response.status}`);
+    }
+  };
+
+  const queueStaticDataReload = () => {
+    window.setTimeout(() => fetchStocksData(false), 90000);
+  };
+
   // 5. 獲取台股 API 數據
   const fetchStocksData = async (isRefresh = false) => {
     setLoading(true);
     setError(null);
     try {
       let response;
+      let usedStaticSnapshot = false;
       
       try {
         // 先嘗試發送到 Express 後端伺服器 (若處於本機或 Full-stack 伺服器運行模式)
@@ -241,41 +263,53 @@ export default function App() {
         if (!response.ok) {
           throw new Error('Express endpoint returned non-OK status');
         }
-      } catch (e) {
+      } catch {
         // 若在 GitHub Pages (Serverless) 等不支援後台運行的環境，則優雅降級讀取相對路徑下的靜態檔案
-        response = await fetch('./api/stocks.json');
+        usedStaticSnapshot = true;
+        response = await fetch(`./api/stocks.json?_=${Date.now()}`, { cache: 'no-store' });
       }
 
       if (!response.ok) {
-        throw new Error(`無法載入靜態資料庫 (HTTP status: ${response.status})`);
+        throw new Error(`無法載入股票資料 (HTTP status: ${response.status})`);
       }
       const resData = await response.json();
       if (resData.success && Array.isArray(resData.data)) {
         setStocks(resData.data);
-        setIsOffline(resData.source === 'fallback_mock');
+        setIsOffline(resData.source === 'fallback_mock' || resData.source === 'static_fallback' || resData.source === 'empty_fallback');
         
         // 格式化最後更新時間
         const updateDate = new Date(resData.timestamp);
         setLastUpdated(updateDate.toLocaleString('zh-TW', { hour12: false }));
         
         if (isRefresh) {
-          showToast(resData.source === 'fallback_mock'
-            ? "⚠️ 已重新整理！目前載入的是高保真離線備用行情"
-            : "✅ 已重新同步！台股行情與大盤指標已成功更新"
-          );
+          if (usedStaticSnapshot) {
+            const cleanToken = githubToken ? githubToken.trim() : '';
+            if (cleanToken) {
+              await triggerGithubWorkflow(cleanToken);
+              queueStaticDataReload();
+              showToast('已送出雲端同步，約 1-2 分鐘後會自動重讀最新快照。');
+            } else {
+              showToast('已重讀已發布快照。若要產生當下最新資料，請先到齒輪設定 GitHub Token。');
+            }
+          } else {
+            showToast(resData.source === 'twse_mis_live'
+              ? '已同步當下即時行情。'
+              : '已同步最新已發布行情。'
+            );
+          }
         } else {
-          showToast(resData.source === 'fallback_mock' 
-            ? "⚠️ 目前載入的是離線備用數據，請在聯網時透過 Actions 排程更新" 
-            : "✅ 台股收盤數據載入成功！"
+          showToast(resData.source === 'twse_mis_live'
+            ? '已載入即時行情。'
+            : '已載入股票資料。'
           );
         }
       } else {
-        throw new Error("靜態資料結構格式不正確");
+        throw new Error("股票資料結構格式不正確");
       }
     } catch (err) {
       console.error("Fetch error:", err);
-      setError("無法取得台灣股市數據庫。如果您是在本機開發，請確保已運行過 npm run build:data 生成 public/api/stocks.json。");
-      showToast("❌ 數據庫檔案載入失敗");
+      setError("無法取得台股資料。請稍後再試，或確認 GitHub Actions 是否已成功產生 public/api/stocks.json。");
+      showToast("資料同步失敗，請稍後再試。");
     } finally {
       setLoading(false);
     }
@@ -289,33 +323,18 @@ export default function App() {
   const handleTriggerWorkflow = async () => {
     const cleanToken = githubToken ? githubToken.trim() : '';
     if (!cleanToken) {
-      showToast("❌ 請先輸入有效的 GitHub Token！");
+      showToast("請先輸入有效的 GitHub Token。");
       return;
     }
     setIsTriggeringAction(true);
     try {
-      const response = await fetch('https://api.github.com/repos/zerokemx-ui/Stock-picker/actions/workflows/deploy.yml/dispatches', {
-        method: 'POST',
-        headers: {
-          'Authorization': `token ${cleanToken}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ref: 'main'
-        })
-      });
-
-      if (response.status === 204) {
-        showToast("⚡ 雲端更新指令已成功送出！請等待約 1-2 分鐘，雲端將自動更新數據。");
-        setIsGithubPanelOpen(false);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP status ${response.status}`);
-      }
+      await triggerGithubWorkflow(cleanToken);
+      queueStaticDataReload();
+      showToast("雲端同步指令已送出，約 1-2 分鐘後會自動重讀最新快照。");
+      setIsGithubPanelOpen(false);
     } catch (err) {
       console.error("觸發 Actions 失敗:", err);
-      showToast(`❌ 觸發雲端更新失敗: ${err.message}`);
+      showToast(`觸發雲端同步失敗：${err.message}`);
     } finally {
       setIsTriggeringAction(false);
     }
