@@ -43,6 +43,9 @@ export default function StockCompare({
   const [numChang, setNumChang] = useState(1); // 預設 1 張
   const [activeCompareMetric, setActiveCompareMetric] = useState('PE');
 
+  // 1. 取得當前對比股票的完整數據
+  const compareStocks = stocks.filter(s => compareList.includes(s.Code));
+
   // 計算對比圖表的資料
   const barChartData = useMemo(() => {
     const labels = compareStocks.map(s => `${s.Name} (${s.Code})`);
@@ -137,9 +140,6 @@ export default function StockCompare({
       }
     }
   };
-
-  // 1. 取得當前對比股票的完整數據
-  const compareStocks = stocks.filter(s => compareList.includes(s.Code));
 
   // 2. 股利計算器邏輯
   const selectedCalcStock = compareStocks.find(s => s.Code === calcStockCode) || compareStocks[0];

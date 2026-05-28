@@ -29,4 +29,9 @@ dist-ssr/
 *.sw?
 .DS_Store
 
+# Temporary & Scratch files
+scratch/
+gemini-code-*.json
+.gemini/
+
 # End of .gitignore

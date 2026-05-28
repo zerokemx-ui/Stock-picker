@@ -845,4 +845,44 @@ h1, h2, h3, h4 {
   font-family: var(--font-family);
 }
 
+/* ==========================================================================
+   舒適大字型模式 (Presbyopia / Accessibility Large Fonts Mode)
+   ========================================================================== */
+html.large-font-mode {
+  font-size: 118% !important; /* 全域 rem 等比放大 18% */
+}
+
+html.large-font-mode body {
+  line-height: 1.75 !important; /* 增加行高，提升閱讀間距 */
+}
+
+/* 提高 muted 灰階文字的對比度，方便長輩與老花眼閱讀 */
+html.large-font-mode :root {
+  --text-muted: #94a3b8 !important; /* 從原先的 #64748b 提升到更高的灰度，提升明亮度 */
+  --text-secondary: #e2e8f0 !important; /* 原先的 #cbd5e1 提升為更接近白色的 #e2e8f0 */
+}
+
+html.large-font-mode .glass-panel p,
+html.large-font-mode .glass-card p,
+html.large-font-mode p {
+  font-size: 0.94rem !important; /* 原本 0.8rem 左右的段落放大，更容易看清 */
+}
+
+html.large-font-mode .stock-table th {
+  font-size: 1rem !important; /* 表頭文字放大 */
+}
+
+html.large-font-mode .stock-table td {
+  font-size: 1.05rem !important; /* 表格內股價、代號等核心數值放大 */
+}
+
+html.large-font-mode .badge {
+  font-size: 0.8rem !important; /* 徽章文字放大 */
+  padding: 0.3rem 0.75rem !important;
+}
+
+html.large-font-mode .tab-btn {
+  font-size: 1.05rem !important; /* 頂部 Tab 選單文字放大 */
+}
+
 

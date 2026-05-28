@@ -9,15 +9,18 @@ import {
   RefreshCw, 
   AlertTriangle,
   WifiOff,
-  Settings
+  Settings,
+  Zap,
+  Briefcase
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import StockFilter from './components/StockFilter';
 import StockTable from './components/StockTable';
-import StockCharts from './components/StockCharts';
 import StockCompare from './components/StockCompare';
 import Watchlist from './components/Watchlist';
 import StockDetail from './components/StockDetail';
+import SOPRadar from './components/SOPRadar';
+import Portfolio from './components/Portfolio';
 import { PRESET_STRATEGIES } from './utils/stockUtils';
 
 const DEFAULT_FILTERS = {
@@ -74,10 +77,13 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // 4. UI 面板控制狀態
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'table', 'charts', 'compare'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'table', 'compare', 'sop_radar'
   const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [selectedStockCode, setSelectedStockCode] = useState(null);
+  const [isLargeFont, setIsLargeFont] = useState(() => {
+    return localStorage.getItem('tw_stock_large_font') === 'true';
+  });
 
   // GitHub Actions 手動雲端觸發狀態
   const [githubToken, setGithubToken] = useState(() => {
@@ -108,6 +114,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('tw_stock_custom_strategies', JSON.stringify(customStrategies));
   }, [customStrategies]);
+
+  useEffect(() => {
+    if (isLargeFont) {
+      document.documentElement.classList.add('large-font-mode');
+    } else {
+      document.documentElement.classList.remove('large-font-mode');
+    }
+  }, [isLargeFont]);
 
   // 合併預設與自訂策略
   const allStrategies = useMemo(() => {
@@ -568,6 +582,32 @@ export default function App() {
           </button>
 
           <button 
+            onClick={() => {
+              setIsLargeFont(prev => {
+                const next = !prev;
+                localStorage.setItem('tw_stock_large_font', next ? 'true' : 'false');
+                showToast(next ? "👁️ 已開啟舒適大字模式，字體與對比度已為您放大調整！" : "👁️ 已恢復標準字型模式");
+                return next;
+              });
+            }}
+            className={isLargeFont ? "btn-primary" : "btn-secondary"} 
+            style={{ 
+              padding: '0.6rem 1rem', 
+              fontSize: '0.85rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px',
+              border: isLargeFont ? '1px solid rgba(168, 85, 247, 0.4)' : undefined,
+              background: isLargeFont ? 'linear-gradient(135deg, var(--accent-purple) 0%, #7e22ce 100%)' : undefined,
+              boxShadow: isLargeFont ? '0 4px 15px rgba(168, 85, 247, 0.3)' : undefined
+            }}
+            title="點擊切換大字型模式 (適合老花/長輩閱讀)"
+          >
+            <span style={{ fontSize: '0.95rem', fontWeight: 900 }}>A⁺</span>
+            {isLargeFont ? "舒適大字體" : "放大字體"}
+          </button>
+
+          <button 
             onClick={() => setIsGithubPanelOpen(true)}
             className="btn-secondary" 
             style={{ padding: '0.6rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -612,13 +652,6 @@ export default function App() {
           進階智慧選股
         </button>
 
-        <button 
-          onClick={() => setActiveTab('charts')} 
-          className={`tab-btn ${activeTab === 'charts' ? 'active' : ''}`}
-        >
-          <Coins size={16} />
-          價值尋寶散佈圖
-        </button>
 
         <button 
           onClick={() => setActiveTab('compare')} 
@@ -630,6 +663,30 @@ export default function App() {
           {compareList.length > 0 && (
             <span style={{ marginLeft: '6px', background: 'var(--accent-blue)', color: '#070a13', fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '10px', fontWeight: 'bold' }}>
               {compareList.length}
+            </span>
+          )}
+        </button>
+
+        <button 
+          onClick={() => setActiveTab('sop_radar')} 
+          className={`tab-btn ${activeTab === 'sop_radar' ? 'active' : ''}`}
+          style={{ position: 'relative' }}
+        >
+          <Zap size={16} style={{ color: 'var(--accent-purple)' }} />
+          SOP 短線飆股雷達
+          <span className="live-badge" style={{ position: 'absolute', top: '-6px', right: '-10px', fontSize: '0.55rem', padding: '1px 4px', background: 'rgba(168, 85, 247, 0.2)', border: '1px solid rgba(168, 85, 247, 0.4)', color: 'var(--accent-purple)', borderRadius: '4px', scale: '0.8' }}>PRO</span>
+        </button>
+
+        <button 
+          onClick={() => setActiveTab('portfolio')} 
+          className={`tab-btn ${activeTab === 'portfolio' ? 'active' : ''}`}
+          style={{ position: 'relative' }}
+        >
+          <Briefcase size={16} style={{ color: 'var(--accent-blue)' }} />
+          模擬投資組合
+          {portfolio.length > 0 && (
+            <span style={{ marginLeft: '6px', background: 'var(--accent-blue)', color: '#070a13', fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '10px', fontWeight: 'bold' }}>
+              {portfolio.length}
             </span>
           )}
         </button>
@@ -682,10 +739,6 @@ export default function App() {
               <Dashboard 
                 stocks={stocks} 
                 onSelectStock={handleSelectStock} 
-                portfolio={portfolio}
-                portfolioLivePrices={portfolioLivePrices}
-                onRemoveFromPortfolio={handleRemoveFromPortfolio}
-                onUpdatePortfolioLots={handleUpdatePortfolioLots}
               />
             )}
 
@@ -732,10 +785,6 @@ export default function App() {
               </>
             )}
 
-            {/* Tab 3: Chart.js 數據圖表 */}
-            {activeTab === 'charts' && (
-              <StockCharts stocks={filteredStocks} onSelectStock={handleSelectStock} />
-            )}
 
             {/* Tab 4: 股票對比與計算機 */}
             {activeTab === 'compare' && (
@@ -744,6 +793,26 @@ export default function App() {
                 compareList={compareList}
                 onRemoveCompare={handleRemoveCompare}
                 onClearCompare={handleClearCompare}
+              />
+            )}
+
+            {/* Tab 5: SOP 短線飆股雷達 */}
+            {activeTab === 'sop_radar' && (
+              <SOPRadar 
+                stocks={stocks} 
+                onSelectStock={handleSelectStock} 
+              />
+            )}
+
+            {/* Tab 6: 模擬投資組合 */}
+            {activeTab === 'portfolio' && (
+              <Portfolio 
+                stocks={stocks} 
+                onSelectStock={handleSelectStock} 
+                portfolio={portfolio}
+                portfolioLivePrices={portfolioLivePrices}
+                onRemoveFromPortfolio={handleRemoveFromPortfolio}
+                onUpdatePortfolioLots={handleUpdatePortfolioLots}
               />
             )}
 

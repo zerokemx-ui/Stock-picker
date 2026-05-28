@@ -32,7 +32,8 @@ import {
   formatValueInYi, 
   calculateChangeRate, 
   getChangeColorClass, 
-  safeFloat 
+  safeFloat,
+  runDCABacktest
 } from '../utils/stockUtils';
 
 // 註冊 Chart.js 核心與折線圖填滿元件
@@ -134,6 +135,120 @@ export default function StockDetail({
     setTargetSellPrice((closingPrice * 1.10).toFixed(2));
   }, [stockCode, closingPrice]);
 
+  // 2.2. 定期定額回測試算狀態
+  const [dcaAmount, setDcaAmount] = useState(10000); // 預設 10,000 元
+  const [dcaYears, setDcaYears] = useState(3);       // 預設 3 年
+
+  // 當選中股票變更時，重設定期定額狀態
+  useEffect(() => {
+    setDcaAmount(10000);
+    setDcaYears(3);
+  }, [stockCode]);
+
+  const dcaResults = useMemo(() => {
+    return runDCABacktest(stock, dcaAmount, dcaYears);
+  }, [stock, dcaAmount, dcaYears]);
+
+  const dcaChartData = useMemo(() => {
+    if (!dcaResults || !dcaResults.history) return { labels: [], datasets: [] };
+
+    return {
+      labels: dcaResults.history.map(h => h.label),
+      datasets: [
+        {
+          label: '投資總成本',
+          data: dcaResults.history.map(h => h.cost),
+          borderColor: '#64748b',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: false,
+          tension: 0.1
+        },
+        {
+          label: '複利期末市值',
+          data: dcaResults.history.map(h => h.value),
+          borderColor: 'var(--accent-purple)',
+          borderWidth: 3,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: 'var(--accent-purple)',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          backgroundColor: (context) => {
+            const chart = context.chart;
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return null;
+            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, 'rgba(168, 85, 247, 0.2)');
+            gradient.addColorStop(1, 'rgba(168, 85, 247, 0)');
+            return gradient;
+          }
+        }
+      ]
+    };
+  }, [dcaResults]);
+
+  const dcaChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: {
+          color: '#cbd5e1',
+          font: { size: 10, weight: 'bold' },
+          boxWidth: 12,
+          padding: 6
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(14, 19, 38, 0.95)',
+        titleColor: '#f8fafc',
+        bodyColor: '#cbd5e1',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        padding: 10,
+        callbacks: {
+          label: (context) => {
+            const val = context.raw;
+            return ` ${context.dataset.label}: NT$ ${Math.round(val).toLocaleString()} 元`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { 
+          color: '#64748b', 
+          font: { 
+            size: 9,
+            family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          } 
+        }
+      },
+      y: {
+        grid: { color: 'rgba(255, 255, 255, 0.03)' },
+        ticks: { 
+          color: '#cbd5e1', 
+          font: { 
+            size: 9,
+            family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          },
+          callback: (value) => {
+            if (value >= 10000) return (value / 10000).toFixed(0) + '萬';
+            return value;
+          }
+        }
+      }
+    }
+  };
+
   // 3. 計算同行業平均指標 (PE, PB, 殖利率)
   const peerComparison = useMemo(() => {
     const categoryStocks = stocks.filter(s => s.Category === stock.Category);
@@ -195,7 +310,26 @@ export default function StockDetail({
     if (changeVal > 0) score += 7;
     else if (changeVal < 0) score -= 5;
 
-    // 限制分數區間在 10 ~ 98
+    // 流動性(成交量)權重與診斷 - 優先採用實時動態成交量以維持一致性
+    const volShares = liveStockData ? parseFloat(liveStockData.TradeVolume) * 1000 : (parseInt(stock.TradeVolume) || 0);
+    const volChang = Math.floor(volShares / 1000); // 轉換為「張」
+
+    let liquidityLevel = 'decent'; // 'extremely_low', 'low', 'decent', 'high'
+    if (volChang < 100) {
+      score -= 25; // 殭屍股嚴重扣分
+      liquidityLevel = 'extremely_low';
+    } else if (volChang < 500) {
+      score -= 10; // 流動性偏低扣分
+      liquidityLevel = 'low';
+    } else if (volChang >= 3000) {
+      score += 10; // 主力最愛
+      liquidityLevel = 'high';
+    } else if (volChang >= 1500) {
+      score += 5; // 充足流動性
+      liquidityLevel = 'high';
+    }
+
+    // 限制分數區回在 10 ~ 98
     score = Math.max(10, Math.min(98, score));
 
     let grade = 'B';
@@ -213,11 +347,11 @@ export default function StockDetail({
     } else if (score < 50) {
       grade = 'C';
       gradeColor = 'var(--stock-up)'; // 紅色/橙色警示
-      gradeDesc = '溢價偏高或營運虧損，宜謹慎評估';
+      gradeDesc = '流動性極低、溢價偏高或營運虧損，宜謹慎評估';
     }
 
-    return { score, grade, gradeColor, gradeDesc };
-  }, [stock, changeVal]);
+    return { score, grade, gradeColor, gradeDesc, liquidityLevel, volChang };
+  }, [stock, changeVal, liveStockData]);
 
   // 5. 動能與優劣勢分析 (Pros & Cons)
   const prosAndCons = useMemo(() => {
@@ -307,8 +441,9 @@ export default function StockDetail({
       dayOffset++;
     }
 
-    // 基於成交量 TradeVolume 取得一個基準日成交量 (以張為單位)
-    const baseVolume = (parseInt(stock.TradeVolume) || 5000000) / 1000 / 30; // 每日平均張數
+    // 基於今日即時/靜態成交量取得一個基準日成交量 (以張為單位，維持與當日相同的張數級別)
+    const currentVolShares = liveStockData ? parseFloat(liveStockData.TradeVolume) * 1000 : (parseInt(stock.TradeVolume) || 5000000);
+    const baseVolume = currentVolShares / 1000; // 每日基準成交張數
 
     // 反向隨機漫步回推 30 天，然後正向生成 ohlcData 以維持時間順序
     const tempCloses = [];
@@ -391,7 +526,7 @@ export default function StockDetail({
         }
       ]
     };
-  }, [stock, closingPrice, changeVal]);
+  }, [stock, closingPrice, changeVal, liveStockData]);
 
   const chartOptions = {
     responsive: true,
@@ -429,7 +564,13 @@ export default function StockDetail({
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: '#64748b', font: { size: 10 } }
+        ticks: { 
+          color: '#64748b', 
+          font: { 
+            size: 10,
+            family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          } 
+        }
       },
       yPrice: {
         type: 'linear',
@@ -437,7 +578,10 @@ export default function StockDetail({
         grid: { color: 'rgba(255, 255, 255, 0.03)' },
         ticks: { 
           color: '#cbd5e1', 
-          font: { size: 10 },
+          font: { 
+            size: 10,
+            family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          },
           callback: (value) => `${value.toFixed(1)}元`
         }
       },
@@ -447,7 +591,10 @@ export default function StockDetail({
         grid: { display: false },
         ticks: { 
           color: '#64748b', 
-          font: { size: 9 },
+          font: { 
+            size: 9,
+            family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          },
           callback: (value) => `${Math.round(value)}張`
         },
         max: Math.max(...(chartData.ohlc ? chartData.ohlc.map(d => d.volume) : [1000])) * 3.3
@@ -844,6 +991,34 @@ export default function StockDetail({
                     {parseFloat(stock.DividendYield) >= peerComparison.avgYield ? '✅ 殖利率超越產業平均，高股息吸金力強' : '⚠️ 殖利率低於產業平均，配息能力偏弱'}
                   </div>
                 </div>
+
+                {/* 💡 核心財務指標解析小學堂 (Financial Metrics Glossary) */}
+                <div style={{ 
+                  marginTop: '1.25rem',
+                  borderTop: '1px dashed rgba(255, 255, 255, 0.08)',
+                  paddingTop: '1rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-blue)', marginBottom: '0.5rem' }}>
+                    <Info size={13} style={{ color: 'var(--accent-blue)' }} />
+                    <span>💡 核心財務指標解析小學堂</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                    <div>
+                      <strong style={{ color: 'var(--text-primary)' }}>• 本益比 (PE)：</strong>
+                      <span>代表「花多少年才能靠盈餘收回本金」。公式為 <code>股價 / EPS</code>。倍數越低代表回本越快、價格越便宜；若公司虧損則顯示為 N/A (無本益比)。</span>
+                    </div>
+                    <div>
+                      <strong style={{ color: 'var(--text-primary)' }}>• 股價淨值比 (PB)：</strong>
+                      <span>代表「股價相對於公司帳面淨資產的倍數」。公式為 <code>股價 / 每股淨值</code>。通常以 1.0 倍為基準，低於 1.0 代表股價打折出售，安全邊際極高。</span>
+                    </div>
+                    <div>
+                      <strong style={{ color: 'var(--text-primary)' }}>• 股息殖利率 (Yield)：</strong>
+                      <span>代表「每一元股息投入能為您換回多少比例的被動利息」。公式為 <code>現金股利 / 股價</code>。數值越高代表分紅越豐厚，大於 5.0% 屬優質高股息。</span>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
 
@@ -856,7 +1031,7 @@ export default function StockDetail({
                 </div>
 
                 {/* 綜合得分評等 */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', borderRadius: '15px', background: `rgba(255, 255, 255, 0.03)`, border: `2px solid ${valuationRating.gradeColor}`, boxShadow: `0 0 15px ${valuationRating.gradeColor}40`, color: valuationRating.gradeColor, fontSize: '2.1rem', fontWeight: 900, fontFamily: 'Outfit' }}>
                     {valuationRating.grade}
                   </div>
@@ -869,6 +1044,57 @@ export default function StockDetail({
                       💬 {valuationRating.gradeDesc}
                     </p>
                   </div>
+                </div>
+
+                {/* 💧 獨家流動性風險安全診斷面板 */}
+                <div style={{ 
+                  marginBottom: '1.25rem',
+                  padding: '0.75rem 1rem', 
+                  borderRadius: '10px', 
+                  border: valuationRating.liquidityLevel === 'extremely_low' 
+                    ? '1px solid rgba(239, 68, 68, 0.25)' 
+                    : valuationRating.liquidityLevel === 'low' 
+                      ? '1px solid rgba(245, 158, 11, 0.25)' 
+                      : valuationRating.liquidityLevel === 'high'
+                        ? '1px solid rgba(0, 230, 118, 0.25)'
+                        : '1px solid rgba(56, 189, 248, 0.25)',
+                  background: valuationRating.liquidityLevel === 'extremely_low'
+                    ? 'rgba(239, 68, 68, 0.04)'
+                    : valuationRating.liquidityLevel === 'low'
+                      ? 'rgba(245, 158, 11, 0.04)'
+                      : valuationRating.liquidityLevel === 'high'
+                        ? 'rgba(0, 230, 118, 0.04)'
+                        : 'rgba(56, 189, 248, 0.04)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    <span>💧 流動性安全診斷：</span>
+                    {valuationRating.liquidityLevel === 'extremely_low' && (
+                      <span style={{ color: 'var(--stock-up)', fontWeight: 900 }}>殭屍股 (極高風險 🚨)</span>
+                    )}
+                    {valuationRating.liquidityLevel === 'low' && (
+                      <span style={{ color: 'var(--accent-gold)', fontWeight: 900 }}>冷門股 (中低流動性 ⚠️)</span>
+                    )}
+                    {valuationRating.liquidityLevel === 'decent' && (
+                      <span style={{ color: 'var(--accent-blue)', fontWeight: 900 }}>合格股 (流動性正常 ✓)</span>
+                    )}
+                    {valuationRating.liquidityLevel === 'high' && (
+                      <span style={{ color: 'var(--stock-down)', fontWeight: 900 }}>熱門主力愛股 (流動性充沛 🔥)</span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: '1.45', margin: 0 }}>
+                    {valuationRating.liquidityLevel === 'extremely_low' && (
+                      `警告：日成交量僅 ${valuationRating.volChang} 張。屬於流動性極低之冷門殭屍股，完全缺乏大戶、外資與投信青睞。大筆交易將面臨嚴重滑點，面臨買不到、賣不掉的變現危機，強烈不建議買進！`
+                    )}
+                    {valuationRating.liquidityLevel === 'low' && (
+                      `提醒：日成交量僅 ${valuationRating.volChang} 張。買賣盤口較為稀疏，法人生意寥寥，大筆單進出易引發價格劇烈波動，建議嚴格控管投資部位。`
+                    )}
+                    {valuationRating.liquidityLevel === 'decent' && (
+                      `說明：日成交量為 ${valuationRating.volChang} 張。流動性表現一般，適合散戶正常小額投資交易，滑點風險在正常範疇內。`
+                    )}
+                    {valuationRating.liquidityLevel === 'high' && (
+                      `優勢：日成交量高達 ${valuationRating.volChang.toLocaleString()} 張。三大法人與大戶著墨極深，盤口厚實，買賣點價差窄，為短線飆股與資金避風港的黃金首選！`
+                    )}
+                  </p>
                 </div>
 
                 {/* 優缺點動態文字分析 */}
@@ -1101,6 +1327,130 @@ export default function StockDetail({
                 <Coins size={18} />
                 💼 模擬買入此股，加入我的投資組合 (以現價 {closingPrice.toFixed(2)} 元買入 {buyLots} 張)
               </button>
+            </div>
+
+          </div>
+
+          {/* 定期定額歷史存股回測與複利試算機 */}
+          <div className="glass-card" style={{ background: 'rgba(168, 85, 247, 0.04)', border: '1px solid rgba(168, 85, 247, 0.15)', marginTop: '0rem' }}>
+            
+            {/* 標頭 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(168, 85, 247, 0.15)', paddingBottom: '0.75rem' }}>
+              <Coins size={18} style={{ color: 'var(--accent-purple)' }} />
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                💰 定期定額歷史存股回測與複利增長試算機
+              </h3>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: '6px' }}>
+                (定期定額複利滾動，假設股利自動再投資，基於該股基本面與產業股性回測)
+              </span>
+            </div>
+
+            {/* 輸入控制項區 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+              
+              {/* 控制項 1: 每月扣款金額 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                  每月固定投資金額
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <select 
+                    value={dcaAmount} 
+                    onChange={(e) => setDcaAmount(parseInt(e.target.value))}
+                    className="input-field"
+                    style={{ padding: '0.6rem 0.8rem', fontSize: '0.9rem', width: '100%', cursor: 'pointer', fontWeight: 700 }}
+                  >
+                    <option value="3000">3,000 元</option>
+                    <option value="5000">5,000 元</option>
+                    <option value="10000">10,000 元</option>
+                    <option value="20000">20,000 元</option>
+                    <option value="50000">50,000 元</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 控制項 2: 投資年限 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                  投資扣款年限 (定期定額)
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {[1, 3, 5, 10].map(yr => (
+                    <button
+                      key={yr}
+                      onClick={() => setDcaYears(yr)}
+                      className="btn-secondary"
+                      style={{ 
+                        flex: 1, 
+                        padding: '0.6rem 0rem', 
+                        fontSize: '0.85rem', 
+                        fontWeight: dcaYears === yr ? 800 : 500,
+                        borderColor: dcaYears === yr ? 'var(--accent-purple)' : 'var(--border-glass)',
+                        background: dcaYears === yr ? 'rgba(168, 85, 247, 0.1)' : 'transparent',
+                        color: dcaYears === yr ? 'var(--accent-purple)' : 'var(--text-secondary)',
+                      }}
+                    >
+                      {yr} 年
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* 回測試算核心結果 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.75rem' }}>
+              
+              {/* 左邊：數字統計數據 */}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem', background: 'rgba(0, 0, 0, 0.15)', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '12px', padding: '1.25rem' }}>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>累積投入總本金</span>
+                    <span style={{ fontFamily: 'Outfit', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                      NT$ {dcaResults.principal.toLocaleString()} 元
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>期末資產市值 (含配息再投入)</span>
+                    <span style={{ fontFamily: 'Outfit', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      NT$ {dcaResults.finalValue.toLocaleString()} 元
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>累積領取現金股利 (估)</span>
+                    <span style={{ fontFamily: 'Outfit', fontWeight: 700, color: 'var(--accent-gold)' }}>
+                      NT$ {dcaResults.totalDividends.toLocaleString()} 元
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '0.5rem' }}>
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>累積淨回報率 (ROI)</span>
+                    <span style={{ fontFamily: 'Outfit', fontWeight: 900 }} className="up-text">
+                      +{dcaResults.roi}%
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>預估年化複利報酬率 (CAGR)</span>
+                    <span style={{ fontFamily: 'Outfit', fontWeight: 900, color: 'var(--accent-blue)' }}>
+                      {dcaResults.cagr}%
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(168, 85, 247, 0.05)', border: '1px solid rgba(168, 85, 247, 0.1)', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                  📈 <strong>存股效益分析：</strong> 每月固定投資 {dcaAmount.toLocaleString()} 元，經歷 {dcaYears} 年累積，您的資產淨增值了 <span style={{ color: 'var(--stock-up)', fontWeight: 'bold' }}>NT$ {dcaResults.totalReturn.toLocaleString()} 元</span>，複利效果顯著！
+                </div>
+              </div>
+
+              {/* 右邊：資產成長折線圖 */}
+              <div style={{ minHeight: '230px', position: 'relative' }}>
+                <Line data={dcaChartData} options={dcaChartOptions} />
+              </div>
+
             </div>
 
           </div>

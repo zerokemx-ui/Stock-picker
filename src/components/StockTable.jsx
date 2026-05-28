@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Star, 
   ArrowLeftRight, 
@@ -29,7 +29,65 @@ export default function StockTable({
 }) {
   const ITEMS_PER_PAGE = 15;
 
-  // 1. 處理排序
+  // 1. 本地實時價格狀態
+  const [livePrices, setLivePrices] = useState({});
+
+  // 2. 處理分頁
+  const totalItems = stocks.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedStocks = useMemo(() => {
+    return stocks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [stocks, startIndex]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  // 3. 實時價格載入與同步 (每 15 秒背景更新一次，僅鎖定當前頁面 15 檔可見股票)
+  const visibleCodesString = useMemo(() => {
+    return paginatedStocks.map(s => s.Code).join(',');
+  }, [paginatedStocks]);
+
+  useEffect(() => {
+    if (!visibleCodesString) return;
+    
+    let isMounted = true;
+    const fetchLivePrices = async () => {
+      try {
+        const response = await fetch(`/api/stocks/realtime?codes=${visibleCodesString}`);
+        const resData = await response.json();
+        if (resData.success && Array.isArray(resData.data) && isMounted) {
+          const newPrices = {};
+          resData.data.forEach(item => {
+            newPrices[item.Code] = {
+              price: parseFloat(item.ClosingPrice),
+              change: parseFloat(item.Change),
+              changePercent: parseFloat(item.ChangePercent)
+            };
+          });
+          setLivePrices(prev => ({ ...prev, ...newPrices }));
+        }
+      } catch (err) {
+        console.error("無法同步目前分頁個股即時價格:", err);
+      }
+    };
+
+    fetchLivePrices();
+    
+    const timer = setInterval(() => {
+      fetchLivePrices();
+    }, 15000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [visibleCodesString]);
+
+  // 4. 處理排序
   const handleSort = (key) => {
     let direction = 'desc';
     if (sortConfig.key === key && sortConfig.direction === 'desc') {
@@ -46,18 +104,6 @@ export default function StockTable({
     return sortConfig.direction === 'desc' 
       ? <ArrowDown size={13} style={{ marginLeft: '4px', color: 'var(--accent-blue)' }} />
       : <ArrowUp size={13} style={{ marginLeft: '4px', color: 'var(--accent-blue)' }} />;
-  };
-
-  // 2. 處理分頁
-  const totalItems = stocks.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedStocks = stocks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-  const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
   };
 
   // 判斷自選或對比狀態
@@ -93,9 +139,16 @@ export default function StockTable({
             </thead>
             <tbody>
               {paginatedStocks.map((stock) => {
-                const changeVal = parseFloat(stock.Change) || 0;
-                const changeClass = getChangeColorClass(stock.Change);
-                const rateText = calculateChangeRate(stock.ClosingPrice, stock.Change);
+                const liveData = livePrices[stock.Code];
+                const closingPrice = (liveData && liveData.price !== undefined && !isNaN(liveData.price)) 
+                  ? liveData.price 
+                  : parseFloat(stock.ClosingPrice || 0);
+                const changeVal = (liveData && liveData.change !== undefined && !isNaN(liveData.change)) 
+                  ? liveData.change 
+                  : parseFloat(stock.Change || 0);
+                
+                const changeClass = getChangeColorClass(changeVal.toString());
+                const rateText = calculateChangeRate(closingPrice.toString(), changeVal.toString());
                 
                 // 台灣股市習慣：上漲顯示 "+" 前綴，下跌顯示 "-"，平盤不顯示
                 const changePrefix = changeVal > 0 ? '+' : '';
@@ -128,7 +181,7 @@ export default function StockTable({
                     
                     {/* 收盤價 */}
                     <td data-label="收盤價" style={{ textAlign: 'right', fontWeight: 'bold', fontFamily: 'Outfit' }}>
-                      {parseFloat(stock.ClosingPrice).toFixed(2)}
+                      {closingPrice.toFixed(2)}
                     </td>
                     
                     {/* 漲跌 */}
