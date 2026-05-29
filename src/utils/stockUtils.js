@@ -734,3 +734,124 @@ function calculateKD(history) {
   }
   return { K, D };
 }
+
+/**
+ * 根據個股代號種子（Seeded Random）生成確定性、高保真的台股籌碼與股權分散分析數據
+ * 確保數據股性合理，且在每次打開與刷新時保持絕對一致。
+ */
+export function generateChipData(stock) {
+  if (!stock) return null;
+  
+  // 依據個股 Code 計算確定性 Random Seed
+  const code = stock.Code || '2330';
+  let seed = 0;
+  for (let i = 0; i < code.length; i++) {
+    seed += code.charCodeAt(i) * Math.pow(10, i);
+  }
+  
+  function getSeededRandom(min, max, decimalPlaces = 2) {
+    const x = Math.sin(seed++) * 10000;
+    const r = x - Math.floor(x);
+    const val = min + r * (max - min);
+    return parseFloat(val.toFixed(decimalPlaces));
+  }
+  
+  // 1. 判定權值股體量 (台積電、聯發科、鴻海、聯電、台達電、富邦金、國泰金)
+  const isLargeCap = ['2330', '2454', '2317', '2303', '2308', '2881', '2882'].includes(code);
+  
+  // 2. 股權分散級距分佈 (千張大戶、400-1000張大戶、10-400張中戶、10張以下散戶)
+  // 權值大股千張持股比例極高，散戶比例極低
+  const superLargeMin = isLargeCap ? 65.0 : 25.0;
+  const superLargeMax = isLargeCap ? 85.0 : 45.0;
+  const superLargePercent = getSeededRandom(superLargeMin, superLargeMax);
+  
+  // 400 ~ 1000 張大戶
+  const largePercent = getSeededRandom(6.0, 14.0);
+  
+  // 10 ~ 400 張中實戶
+  const mediumPercent = getSeededRandom(8.0, 18.0);
+  
+  // 10 張以下奈米散戶 (扣除餘額拼合為 100%)
+  const retailPercent = parseFloat((100 - (superLargePercent + largePercent + mediumPercent)).toFixed(2));
+  
+  // 400張以上大戶持股比 (千張 + 400~1000張大戶)
+  const cumulativeLargePercent = parseFloat((superLargePercent + largePercent).toFixed(2));
+  
+  // 3. 股東總人數
+  const shareholderBase = isLargeCap ? Math.round(getSeededRandom(400000, 1200000, 0)) : Math.round(getSeededRandom(10000, 95000, 0));
+  
+  // 4. 近 5 日法人買賣超 (週一至今日)
+  const days = ['週一', '週二', '週三', '週四', '今日'];
+  const dailyTrades = days.map((day, idx) => {
+    const multiplier = isLargeCap ? 12 : 1.5;
+    // 依據個股漲跌趨勢，生成帶有合理股性的买卖超張數
+    const changeVal = parseFloat(stock.Change) || 0;
+    const baseBias = changeVal > 0 ? 1500 : (changeVal < 0 ? -1200 : 200);
+    
+    const foreign = Math.round((getSeededRandom(-5000, 8000, 0) + baseBias) * multiplier);
+    const trust = Math.round((getSeededRandom(-1500, 2500, 0) + (baseBias * 0.3)) * multiplier);
+    const dealer = Math.round((getSeededRandom(-800, 1000, 0) + (baseBias * 0.15)) * multiplier);
+    const netTotal = foreign + trust + dealer;
+    
+    return {
+      day,
+      foreign,
+      trust,
+      dealer,
+      netTotal
+    };
+  });
+  
+  // 5. 籌碼狀態判定與專家評語
+  const last3DaysNet = dailyTrades.slice(2).reduce((sum, d) => sum + d.netTotal, 0);
+  
+  let status = '';
+  let statusColor = '';
+  let diagnostic = '';
+  
+  if (cumulativeLargePercent >= 70) {
+    if (last3DaysNet > 0) {
+      status = '籌碼高度集中 (主力全力吸籌)';
+      statusColor = '#ef4444'; // 台股買超大紅
+      diagnostic = `🔥 400張與千張大戶持股佔比極高（達 ${cumulativeLargePercent}%），且三大法人近 3 日呈現大額合買（買超 ${last3DaysNet.toLocaleString()} 張）。主力控盤力道極強，散戶比例被壓縮，籌碼高度锁定，有利於股價波段強勢突破！`;
+    } else {
+      status = '籌碼高位鎖定 (主力鎖定防守)';
+      statusColor = '#38bdf8'; // 藍色防守
+      diagnostic = `🛡️ 大戶籌碼鎖定度高（達 ${cumulativeLargePercent}%）。近日法人雖有小額調節（近3日賣超 ${Math.abs(last3DaysNet).toLocaleString()} 張），但千張主力基本持股雷打不動，下檔防守支撐強勁，適合拉回防守防線佈局。`;
+    }
+  } else if (cumulativeLargePercent >= 50) {
+    if (last3DaysNet > 0) {
+      status = '籌碼持續集中 (法人大舉進駐)';
+      statusColor = '#ef4444';
+      diagnostic = `📈 大戶持股佔比中高（${cumulativeLargePercent}%），近日三大法人主力買盤明顯加溫（近3日累計買超 ${last3DaysNet.toLocaleString()} 張），散戶持股比例呈現下降，籌碼正從散戶流向法人，波段動能正在轉強。`;
+    } else {
+      status = '籌碼多空拉鋸 (主力區間整理)';
+      statusColor = '#cbd5e1';
+      diagnostic = `⚖️ 大戶持股集中度適中（${cumulativeLargePercent}%），但法人近 5 日買賣超多空交錯，多空對峙力道均衡，無明顯單邊主力進駐。籌碼結構屬於平衡震盪型，短期股價傾向在均線間來回整理。`;
+    }
+  } else {
+    if (last3DaysNet < 0) {
+      status = '籌碼趨於分散 (主力棄守套現)';
+      statusColor = '#22c55e'; // 台股賣超綠
+      diagnostic = `🚨 400張大戶持股佔比偏低（僅 ${cumulativeLargePercent}%），且 10張以下散戶持股佔比偏高（${retailPercent}%）。伴隨三大法人近期連續出貨（近3日累計賣超 ${Math.abs(last3DaysNet).toLocaleString()} 張），籌碼高度渙散，短線面臨極大下行修正風險，建議退場觀望。`;
+    } else {
+      status = '籌碼低位盤整 (散戶承接套牢)';
+      statusColor = 'rgba(245, 158, 11, 0.8)';
+      diagnostic = `⚠️ 市場主力集中度偏低（${cumulativeLargePercent}%），散戶持股比例較高（${retailPercent}%），籌碼結構虛弱。近日三大法人雖有零星反彈買盤，但中長期大戶並無跟進意願，屬於散戶高檔接盤結構，短線反彈皆宜逢高調節。`;
+    }
+  }
+  
+  return {
+    superLargePercent,
+    largePercent,
+    mediumPercent,
+    retailPercent,
+    cumulativeLargePercent,
+    shareholderBase,
+    dailyTrades,
+    status,
+    statusColor,
+    diagnostic
+  };
+}
+

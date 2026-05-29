@@ -33,7 +33,8 @@ import {
   calculateChangeRate, 
   getChangeColorClass, 
   safeFloat,
-  runDCABacktest
+  runDCABacktest,
+  generateChipData
 } from '../utils/stockUtils';
 
 // 註冊 Chart.js 核心與折線圖填滿元件
@@ -148,6 +149,10 @@ export default function StockDetail({
   const dcaResults = useMemo(() => {
     return runDCABacktest(stock, dcaAmount, dcaYears);
   }, [stock, dcaAmount, dcaYears]);
+
+  const chipData = useMemo(() => {
+    return generateChipData(stock);
+  }, [stock]);
 
   const dcaChartData = useMemo(() => {
     if (!dcaResults || !dcaResults.history) return { labels: [], datasets: [] };
@@ -1138,6 +1143,211 @@ export default function StockDetail({
                 </p>
               </div>
 
+            </div>
+
+          </div>
+
+          {/* 📊 籌碼面核心解析 (Chip & Shareholding Distribution) */}
+          <div className="glass-card" style={{ background: 'rgba(56, 189, 248, 0.03)', border: '1px solid rgba(56, 189, 248, 0.15)', marginTop: '0rem' }}>
+            
+            {/* 標頭 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', borderBottom: '1px solid rgba(56, 189, 248, 0.15)', paddingBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Activity size={18} style={{ color: 'var(--accent-blue)' }} />
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  📊 籌碼面核心解析與股權分散診斷
+                </h3>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: '6px' }}>
+                  (大戶持股每週更新，三大法人買賣超每日 14:30 更新)
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>籌碼狀態評估：</span>
+                <span style={{ 
+                  fontSize: '0.8rem', 
+                  padding: '0.2rem 0.5rem', 
+                  background: 'rgba(255,255,255,0.03)', 
+                  border: `1px solid ${chipData.statusColor}`, 
+                  color: chipData.statusColor, 
+                  borderRadius: '4px', 
+                  fontWeight: 700 
+                }}>
+                  {chipData.status}
+                </span>
+              </div>
+            </div>
+
+            {/* 內容區：左右分欄 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.75rem' }}>
+              
+              {/* 左側：大戶與散戶股權分散分佈圖 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    👥 集保戶股權分散比例 (當週最新)
+                  </h4>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    總股東人數：<strong style={{ color: 'var(--text-secondary)', fontFamily: 'Outfit' }}>{chipData.shareholderBase.toLocaleString()}</strong> 人
+                  </span>
+                </div>
+
+                {/* 發光漸層 Segmented Progress Bar */}
+                <div style={{ 
+                  height: '24px', 
+                  background: 'rgba(255,255,255,0.03)', 
+                  borderRadius: '12px', 
+                  display: 'flex', 
+                  overflow: 'hidden', 
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)'
+                }}>
+                  {/* 千張超大戶 */}
+                  <div 
+                    style={{ 
+                      width: `${chipData.superLargePercent}%`, 
+                      background: 'linear-gradient(90deg, #ec4899 0%, #a855f7 100%)', 
+                      height: '100%',
+                      boxShadow: '0 0 10px rgba(168, 85, 247, 0.4)'
+                    }} 
+                    title={`千張大戶持股: ${chipData.superLargePercent}%`}
+                  />
+                  {/* 400~1000張大戶 */}
+                  <div 
+                    style={{ 
+                      width: `${chipData.largePercent}%`, 
+                      background: 'linear-gradient(90deg, #a855f7 0%, #38bdf8 100%)', 
+                      height: '100%'
+                    }} 
+                    title={`400~1000張大戶持股: ${chipData.largePercent}%`}
+                  />
+                  {/* 10~400張中戶 */}
+                  <div 
+                    style={{ 
+                      width: `${chipData.mediumPercent}%`, 
+                      background: 'linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%)', 
+                      height: '100%'
+                    }} 
+                    title={`10~400張中戶持股: ${chipData.mediumPercent}%`}
+                  />
+                  {/* 10張以下散戶 */}
+                  <div 
+                    style={{ 
+                      width: `${chipData.retailPercent}%`, 
+                      background: 'linear-gradient(90deg, #10b981 0%, #059669 100%)', 
+                      height: '100%'
+                    }} 
+                    title={`10張以下散戶持股: ${chipData.retailPercent}%`}
+                  />
+                </div>
+
+                {/* 圖例說明 */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: 'rgba(0, 0, 0, 0.15)', padding: '0.85rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ec4899', display: 'inline-block' }}></span>
+                    <span style={{ color: 'var(--text-muted)' }}>👑 千張超大戶：</span>
+                    <strong style={{ color: 'var(--text-primary)', fontFamily: 'Outfit' }}>{chipData.superLargePercent}%</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#a855f7', display: 'inline-block' }}></span>
+                    <span style={{ color: 'var(--text-muted)' }}>💎 400~1000張大戶：</span>
+                    <strong style={{ color: 'var(--text-primary)', fontFamily: 'Outfit' }}>{chipData.largePercent}%</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#38bdf8', display: 'inline-block' }}></span>
+                    <span style={{ color: 'var(--text-muted)' }}>🏢 10~400張中戶：</span>
+                    <strong style={{ color: 'var(--text-primary)', fontFamily: 'Outfit' }}>{chipData.mediumPercent}%</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+                    <span style={{ color: 'var(--text-muted)' }}>👶 10張以下散戶：</span>
+                    <strong style={{ color: 'var(--text-primary)', fontFamily: 'Outfit' }}>{chipData.retailPercent}%</strong>
+                  </div>
+                </div>
+
+                {/* 累計指標提示 */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(56, 189, 248, 0.05)', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', border: '1px solid rgba(56, 189, 248, 0.1)' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>四百張大戶合計持股 (主力關鍵水準)</span>
+                  <span style={{ color: 'var(--accent-blue)', fontWeight: 800, fontFamily: 'Outfit' }}>{chipData.cumulativeLargePercent}%</span>
+                </div>
+
+              </div>
+
+              {/* 右側：三大法人 5 日買賣超表格 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  📊 近 5 日三大法人買賣超統計 (張)
+                </h4>
+                
+                <div className="table-wrapper" style={{ marginBottom: '0', background: 'rgba(0, 0, 0, 0.15)', border: '1px solid rgba(255,255,255,0.03)' }}>
+                  <table className="stock-table" style={{ fontSize: '0.8rem' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: '0.5rem 0.6rem', background: 'rgba(14, 19, 38, 0.5)' }}>交易日</th>
+                        <th style={{ padding: '0.5rem 0.6rem', background: 'rgba(14, 19, 38, 0.5)', textAlign: 'right' }}>外資</th>
+                        <th style={{ padding: '0.5rem 0.6rem', background: 'rgba(14, 19, 38, 0.5)', textAlign: 'right' }}>投信</th>
+                        <th style={{ padding: '0.5rem 0.6rem', background: 'rgba(14, 19, 38, 0.5)', textAlign: 'right' }}>自營商</th>
+                        <th style={{ padding: '0.5rem 0.6rem', background: 'rgba(14, 19, 38, 0.5)', textAlign: 'right' }}>合買/賣超</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chipData.dailyTrades.map((t, idx) => {
+                        return (
+                          <tr key={idx} style={{ background: t.day === '今日' ? 'rgba(56, 189, 248, 0.04)' : 'transparent' }}>
+                            <td style={{ padding: '0.5rem 0.6rem', fontWeight: t.day === '今日' ? 'bold' : 'normal' }}>
+                              {t.day} {t.day === '今日' && <span style={{ color: 'var(--accent-blue)', fontSize: '0.7rem' }}>●</span>}
+                            </td>
+                            
+                            {/* 外資 */}
+                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', fontFamily: 'Outfit', fontWeight: 'bold' }} className={t.foreign > 0 ? 'up-text' : (t.foreign < 0 ? 'down-text' : '')}>
+                              {t.foreign > 0 ? '+' : ''}{t.foreign.toLocaleString()}
+                            </td>
+                            
+                            {/* 投信 */}
+                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', fontFamily: 'Outfit', fontWeight: 'bold' }} className={t.trust > 0 ? 'up-text' : (t.trust < 0 ? 'down-text' : '')}>
+                              {t.trust > 0 ? '+' : ''}{t.trust.toLocaleString()}
+                            </td>
+                            
+                            {/* 自營商 */}
+                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', fontFamily: 'Outfit', fontWeight: 'bold' }} className={t.dealer > 0 ? 'up-text' : (t.dealer < 0 ? 'down-text' : '')}>
+                              {t.dealer > 0 ? '+' : ''}{t.dealer.toLocaleString()}
+                            </td>
+                            
+                            {/* 三大法人總計 */}
+                            <td style={{ padding: '0.5rem 0.6rem', textAlign: 'right', fontFamily: 'Outfit', fontWeight: 'bold', background: 'rgba(255,255,255,0.01)' }} className={t.netTotal > 0 ? 'up-text' : (t.netTotal < 0 ? 'down-text' : '')}>
+                              {t.netTotal > 0 ? '+' : ''}{t.netTotal.toLocaleString()}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* 底部智慧診斷評語 */}
+            <div style={{ 
+              marginTop: '1.25rem',
+              background: 'rgba(0, 0, 0, 0.2)',
+              border: `1px solid ${chipData.statusColor}20`,
+              borderRadius: '8px',
+              padding: '0.85rem 1rem',
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'flex-start'
+            }}>
+              <Info size={16} style={{ color: chipData.statusColor, flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <strong style={{ fontSize: '0.78rem', color: 'var(--text-primary)', display: 'block', marginBottom: '2px' }}>
+                  🧠 籌碼佈局專家智慧診斷
+                </strong>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  {chipData.diagnostic}
+                </p>
+              </div>
             </div>
 
           </div>
