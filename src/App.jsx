@@ -846,6 +846,7 @@ export default function App() {
           watchlist={watchlist}
           compareList={compareList}
           portfolio={portfolio}
+          activeStrategy={activeStrategy}
           onAddToPortfolio={handleAddToPortfolio}
           onToggleWatchlist={handleToggleWatchlist}
           onToggleCompare={handleToggleCompare}

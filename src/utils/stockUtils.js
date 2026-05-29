@@ -855,3 +855,82 @@ export function generateChipData(stock) {
   };
 }
 
+/**
+ * 根據個股代號種子（Seeded Random）生成確定性、高保真的台股基本面深層指標描述
+ * 包含在手訂單能見度、產能利用率、技術護城河稀缺性與產業趨勢。
+ */
+export function generateFundamentals(stock) {
+  if (!stock) return null;
+  
+  const code = stock.Code || '2330';
+  let seed = 0;
+  for (let i = 0; i < code.length; i++) {
+    seed += code.charCodeAt(i) * Math.pow(10, code.length - i - 1);
+  }
+  
+  function getSeededRandom(min, max, decimalPlaces = 2) {
+    const x = Math.sin(seed++) * 10000;
+    const r = x - Math.floor(x);
+    const val = min + r * (max - min);
+    return parseFloat(val.toFixed(decimalPlaces));
+  }
+  
+  const isLargeCap = ['2330', '2454', '2317', '2303', '2308', '2881', '2882'].includes(code);
+  const isTech = ['半導體', '電腦週邊', '電子零組件', '光電業', '通信網路'].includes(stock.Category || '其他');
+  
+  let orderVisibility = '';
+  let capacityUtilization = '';
+  let moatScarcity = '';
+  let industryTrend = '';
+  let growthScore = 50; // 基礎基本面評分
+  
+  // 依體量與產業屬性生成對應數據與評語
+  if (isLargeCap) {
+    orderVisibility = '長達 2 ~ 3 季以上，產能全線滿載';
+    capacityUtilization = `${Math.round(getSeededRandom(92, 98, 0))}%`;
+    moatScarcity = '🥇 具備先進製程專利極高壁壘，為全球產業鏈無可替代之霸主';
+    industryTrend = '🔥 受惠於 AI 高效能計算、先進封裝及次世代半導體科技爆發趨勢';
+    growthScore = Math.round(getSeededRandom(88, 97, 0));
+  } else if (isTech) {
+    const isGood = getSeededRandom(0, 1) > 0.35; // 65% tech stocks have positive growth
+    if (isGood) {
+      orderVisibility = '能見度約 1 ~ 2 季，部分長單穩定';
+      capacityUtilization = `${Math.round(getSeededRandom(80, 89, 0))}%`;
+      moatScarcity = '💎 具備垂直整合優勢與核心技術專利，具中高等護城河';
+      industryTrend = '📈 受惠於車用電子、高速傳輸及新一代智慧硬體長線需求';
+      growthScore = Math.round(getSeededRandom(72, 86, 0));
+    } else {
+      orderVisibility = '能見度低於 1 個月，目前以急單拉貨為主';
+      capacityUtilization = `${Math.round(getSeededRandom(60, 72, 0))}%`;
+      moatScarcity = '⚠️ 產業處於成熟期，同質性競爭對手多，毛利率面臨殺價競爭';
+      industryTrend = '⚖️ 處於傳統消費電子週期去庫存尾聲，正等待下游復甦訊號';
+      growthScore = Math.round(getSeededRandom(40, 58, 0));
+    }
+  } else {
+    // 傳統價值或一般產業
+    const isGood = getSeededRandom(0, 1) > 0.4;
+    if (isGood) {
+      orderVisibility = '產銷穩定，長約客源結構扎實';
+      capacityUtilization = `${Math.round(getSeededRandom(85, 92, 0))}%`;
+      moatScarcity = '🛡️ 在地品牌與通路優勢深厚，剛性需求高，享有穩定定價權';
+      industryTrend = '🌱 受惠內需消費復甦、碳中和基建及綠能轉型剛性題材';
+      growthScore = Math.round(getSeededRandom(70, 84, 0));
+    } else {
+      orderVisibility = '能見度一般，多為現貨短期合約';
+      capacityUtilization = `${Math.round(getSeededRandom(68, 78, 0))}%`;
+      moatScarcity = '❌ 受景氣原物料波動大，缺乏長期技術護城河，易受供需失衡衝擊';
+      industryTrend = '⚖️ 傳統原物料與基礎製造業，產業趨於平穩整理，增長空間有限';
+      growthScore = Math.round(getSeededRandom(45, 59, 0));
+    }
+  }
+  
+  return {
+    orderVisibility,
+    capacityUtilization,
+    moatScarcity,
+    industryTrend,
+    growthScore
+  };
+}
+
+

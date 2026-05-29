@@ -34,7 +34,8 @@ import {
   getChangeColorClass, 
   safeFloat,
   runDCABacktest,
-  generateChipData
+  generateChipData,
+  generateFundamentals
 } from '../utils/stockUtils';
 
 // 註冊 Chart.js 核心與折線圖填滿元件
@@ -70,7 +71,8 @@ export default function StockDetail({
   onAddToPortfolio,
   onToggleWatchlist,
   onToggleCompare,
-  onClose
+  onClose,
+  activeStrategy
 }) {
   // 1. 查找目前選中的股票數據
   const stock = useMemo(() => {
@@ -152,6 +154,10 @@ export default function StockDetail({
 
   const chipData = useMemo(() => {
     return generateChipData(stock);
+  }, [stock]);
+
+  const fundamentalsData = useMemo(() => {
+    return generateFundamentals(stock);
   }, [stock]);
 
   const dcaChartData = useMemo(() => {
@@ -283,102 +289,275 @@ export default function StockDetail({
     };
   }, [stocks, stock]);
 
-  // 4. 計算個股健康度與評鑑分數 (0 - 100)
+  // 4. 計算個股健康度與評鑑分數 (六大維度加權評分：接單25%, 技術20%, 籌碼20%, 產業15%, 估值10%, 流通10%)
   const valuationRating = useMemo(() => {
-    let score = 50; // 基礎分數
+    const code = stock.Code || '2330';
     const pe = stock.PEratio !== '' ? parseFloat(stock.PEratio) : null;
     const pb = stock.PBratio !== '' ? parseFloat(stock.PBratio) : null;
     const yieldPct = parseFloat(stock.DividendYield) || 0;
-
-    // 殖利率權重
-    if (yieldPct >= 5.0) score += 15;
-    else if (yieldPct >= 3.0) score += 8;
-    else if (yieldPct === 0.0) score -= 5;
-
-    // 本益比權重
-    if (pe !== null) {
-      if (pe > 0 && pe <= 12) score += 15;
-      else if (pe > 12 && pe <= 20) score += 8;
-      else if (pe > 25) score -= 10;
-    } else {
-      score -= 8; // 虧損股扣分
-    }
-
-    // 股價淨值比權重
-    if (pb !== null) {
-      if (pb > 0 && pb <= 1.2) score += 15;
-      else if (pb > 1.2 && pb <= 2.2) score += 8;
-      else if (pb > 3.0) score -= 8;
-    }
-
-    // 今日動能權重
-    if (changeVal > 0) score += 7;
-    else if (changeVal < 0) score -= 5;
-
-    // 流動性(成交量)權重與診斷 - 優先採用實時動態成交量以維持一致性
+    
+    // 1. 判定個股產業類型與體量
+    const isLargeCap = ['2330', '2454', '2317', '2303', '2308', '2881', '2882'].includes(code);
+    const isTech = ['半導體', '電腦週邊', '電子零組件', '光電業', '通信網路'].includes(stock.Category || '其他');
+    const isValueStock = yieldPct >= 4.0 || ['金融保險', '塑膠工業', '水泥工業', '鋼鐵工業'].includes(stock.Category || '其他');
+    
+    // 2. 資金流通性安全維度 (Liquidity - 10%) - 優先採用實時成交量
     const volShares = liveStockData ? parseFloat(liveStockData.TradeVolume) * 1000 : (parseInt(stock.TradeVolume) || 0);
     const volChang = Math.floor(volShares / 1000); // 轉換為「張」
-
-    let liquidityLevel = 'decent'; // 'extremely_low', 'low', 'decent', 'high'
+    
+    let liqScore = 75;
+    let liquidityLevel = 'decent';
     if (volChang < 100) {
-      score -= 25; // 殭屍股嚴重扣分
+      liqScore = 20; // 殭屍股
       liquidityLevel = 'extremely_low';
     } else if (volChang < 500) {
-      score -= 10; // 流動性偏低扣分
+      liqScore = 50; // 冷門股
       liquidityLevel = 'low';
     } else if (volChang >= 3000) {
-      score += 10; // 主力最愛
+      liqScore = 98; // 熱門股
       liquidityLevel = 'high';
     } else if (volChang >= 1500) {
-      score += 5; // 充足流動性
+      liqScore = 88; // 充足流動性
       liquidityLevel = 'high';
+    } else {
+      liqScore = 75;
+      liquidityLevel = 'decent';
+    }
+    
+    let liqLevelText = '正常';
+    if (liquidityLevel === 'extremely_low') liqLevelText = '殭屍股';
+    else if (liquidityLevel === 'low') liqLevelText = '冷門';
+    else if (liquidityLevel === 'high') liqLevelText = '充沛';
+
+    // 3. 在手訂單與接單能力評估 (Orders & Bookings - 25%)
+    let orderScore = fundamentalsData ? fundamentalsData.growthScore : 60;
+    let orderLevel = '一般';
+    if (fundamentalsData) {
+      if (fundamentalsData.orderVisibility.includes('2 ~ 3 季')) {
+        orderScore = Math.max(90, orderScore);
+        orderLevel = '暢旺';
+      } else if (fundamentalsData.orderVisibility.includes('1 ~ 2 季') || fundamentalsData.orderVisibility.includes('產銷穩定')) {
+        orderScore = Math.max(78, orderScore);
+        orderLevel = '穩健';
+      } else {
+        orderScore = Math.min(58, orderScore);
+        orderLevel = '偏弱';
+      }
+    }
+    if (pe === null || pe <= 0) {
+      orderScore = Math.max(20, orderScore - 20); // 實質虧損下，接單與獲利能力大打折扣
     }
 
-    // 限制分數區回在 10 ~ 98
+    // 4. 技術面趨勢動能評估 (Technical - 20%)
+    let techScore = 70;
+    let techLevel = '整理';
+    if (changeVal > 0) {
+      techScore = isLargeCap ? 92 : 88;
+      techLevel = '強勢';
+    } else if (changeVal < 0) {
+      techScore = 52;
+      techLevel = '疲軟';
+    } else {
+      techScore = 70;
+      techLevel = '整理';
+    }
+
+    // 5. 籌碼大戶集中度評估 (Chip - 20%)
+    let chipScore = 75;
+    let chipLevel = '拉鋸';
+    if (chipData) {
+      const largeHolders = chipData.cumulativeLargePercent;
+      chipScore = largeHolders; // 大戶持股佔比作為底分
+      
+      const dailyTrades = chipData.dailyTrades;
+      const last3DaysNet = dailyTrades.slice(2).reduce((sum, d) => sum + d.netTotal, 0);
+      if (last3DaysNet > 10000) chipScore = Math.min(98, chipScore + 12);
+      else if (last3DaysNet > 2000) chipScore = Math.min(98, chipScore + 6);
+      else if (last3DaysNet < -10000) chipScore = Math.max(10, chipScore - 15);
+      else if (last3DaysNet < -2000) chipScore = Math.max(10, chipScore - 8);
+
+      if (chipScore >= 80) chipLevel = '集中';
+      else if (chipScore >= 60) chipLevel = '鎖定';
+      else if (chipScore < 45) chipLevel = '渙散';
+      else chipLevel = '拉鋸';
+    }
+
+    // 6. 產業趨勢與稀缺性評估 (Trend & Scarcity - 15%)
+    let trendScore = 60;
+    let trendLevel = '平穩';
+    if (isLargeCap) {
+      trendScore = 96;
+      trendLevel = '極高';
+    } else if (isTech) {
+      if (fundamentalsData && fundamentalsData.moatScarcity.includes('中高等護城河')) {
+        trendScore = 85;
+        trendLevel = '高';
+      } else {
+        trendScore = 55;
+        trendLevel = '成熟';
+      }
+    } else {
+      if (fundamentalsData && fundamentalsData.moatScarcity.includes('剛性需求')) {
+        trendScore = 75;
+        trendLevel = '穩健';
+      } else {
+        trendScore = 50;
+        trendLevel = '平淡';
+      }
+    }
+
+    // 7. 合理估值與股利收益評估 (Valuation & Dividends - 10%) - 雙模切換
+    let valScore = 75;
+    let valLevel = '合理';
+    
+    const isHighDivFocus = activeStrategy === 'highYield' || activeStrategy === 'value' || yieldPct >= 4.0;
+    
+    if (isHighDivFocus) {
+      // 價值與高股息導向：殖利率高、P/E P/B 低則分數極高
+      let vTemp = 50;
+      if (yieldPct >= 5.0) vTemp += 25;
+      else if (yieldPct >= 3.0) vTemp += 12;
+      else if (yieldPct === 0.0) vTemp -= 20;
+
+      if (pe !== null && pe > 0) {
+        if (pe <= 12) vTemp += 20;
+        else if (pe <= 18) vTemp += 10;
+        else if (pe > 25) vTemp -= 15;
+      } else {
+        vTemp -= 25; // 虧損
+      }
+
+      if (pb !== null && pb > 0) {
+        if (pb <= 1.2) vTemp += 10;
+        else if (pb > 2.5) vTemp -= 15;
+      }
+      valScore = Math.max(15, Math.min(98, vTemp));
+      
+      if (valScore >= 85) valLevel = '超值';
+      else if (valScore >= 70) valLevel = '便宜';
+      else if (valScore < 45) valLevel = '偏高';
+      else valLevel = '合理';
+    } else {
+      // 成長股與科技股導向：不因為高溢價或低股利被嚴扣！溢價反映高成長認同
+      if (pe === null || pe <= 0) {
+        valScore = 35; // 實質營運虧損依然扣分
+        valLevel = '虧損';
+      } else if (pe > 35) {
+        valScore = 80; // 高溢價代表市場對其接單與成長潛力的強烈認同，給予溢價合理認同分
+        valLevel = '合理溢價';
+      } else if (pe <= 15) {
+        valScore = 95; // 便宜的科技股極具吸引力
+        valLevel = '低估便宜';
+      } else {
+        valScore = 86;
+        valLevel = '合理認同';
+      }
+    }
+
+    // 8. 計算加權綜合得分
+    let score = Math.round(
+      0.25 * orderScore + 
+      0.20 * techScore + 
+      0.20 * chipScore + 
+      0.15 * trendScore + 
+      0.10 * valScore + 
+      0.10 * liqScore
+    );
     score = Math.max(10, Math.min(98, score));
 
+    // 9. 判定評級與動態評語 (消除自相矛盾，分離流動性)
     let grade = 'B';
     let gradeColor = 'var(--text-secondary)';
-    let gradeDesc = '估值中性，穩健觀望';
+    let gradeDesc = '個股各項指標平穩，適合區間整理操作';
 
     if (score >= 85) {
       grade = 'S';
       gradeColor = 'var(--accent-gold)';
-      gradeDesc = '價值低估，高防守型優質股';
+      gradeDesc = isTech 
+        ? '👑 科技領袖，在手訂單暢旺且具技術稀缺性，大戶籌碼鎖定，極具波段爆發力！' 
+        : '👑 頂級高息價值股，防守能力一流且估值極便宜，長線存股安全首選！';
     } else if (score >= 70) {
       grade = 'A';
       gradeColor = 'var(--accent-blue)';
-      gradeDesc = '體質健全，表現優良';
+      gradeDesc = '✨ 營運表現優良，技術與籌碼結構穩健，屬多頭波段操作優質標的';
     } else if (score < 50) {
       grade = 'C';
-      gradeColor = 'var(--stock-up)'; // 紅色/橙色警示
-      gradeDesc = '流動性極低、溢價偏高或營運虧損，宜謹慎評估';
+      gradeColor = '#ff4d4d'; // 亮紅色警示
+      
+      // 動態分析最嚴重的短板 (財務、接單與籌碼痛點，排除流動性)
+      if (pe === null || pe <= 0) {
+        gradeDesc = '🚨 警示：企業營運呈現虧損狀態，基本面承壓，宜防禦性保守看待！';
+      } else if (chipScore < 50) {
+        gradeDesc = '⚠️ 警示：主力與大戶籌碼持續渙散，法人出貨套現，籌碼高度渙散！';
+      } else if (orderScore < 55) {
+        gradeDesc = '⚠️ 警示：在手訂單能見度低，產能利用率欠佳，基本面成長性受限！';
+      } else {
+        gradeDesc = '⚠️ 警示：個股估值溢價過高且技術面疲軟，短線面臨拉回修正風險！';
+      }
+    } else {
+      // B 級
+      if (pe > 28) {
+        gradeDesc = '⚖️ 近期估值溢價稍大，雖然在手訂單無虞，仍需嚴防高檔震盪拉回風險';
+      } else {
+        gradeDesc = '⚖️ 基本面與技術指標表現中性，產業與股性平穩，建議區間分批佈局';
+      }
     }
 
-    return { score, grade, gradeColor, gradeDesc, liquidityLevel, volChang };
-  }, [stock, changeVal, liveStockData]);
+    return { 
+      score, 
+      grade, 
+      gradeColor, 
+      gradeDesc, 
+      liquidityLevel, 
+      volChang,
+      fundScore: orderScore,
+      techScore,
+      chipScore,
+      trendScore,
+      valScore,
+      liqScore,
+      orderLevel,
+      techLevel,
+      chipLevel,
+      trendLevel,
+      valLevel,
+      liqLevelText
+    };
+  }, [stock, changeVal, liveStockData, fundamentalsData, chipData, activeStrategy]);
 
-  // 5. 動能與優劣勢分析 (Pros & Cons)
+  // 5. 動能與優劣勢分析 (Pros & Cons) - 考慮成長/價值分流
   const prosAndCons = useMemo(() => {
     const pros = [];
     const cons = [];
     const pe = stock.PEratio !== '' ? parseFloat(stock.PEratio) : null;
     const pb = stock.PBratio !== '' ? parseFloat(stock.PBratio) : null;
     const yieldPct = parseFloat(stock.DividendYield) || 0;
+    const isTech = ['半導體', '電腦週邊', '電子零組件', '光電業', '通信網路'].includes(stock.Category || '其他');
+    const isHighDivFocus = activeStrategy === 'highYield' || activeStrategy === 'value' || yieldPct >= 4.0;
 
     // 優勢分析
     if (yieldPct >= 5.0) {
       pros.push(`💰 股利超豐厚：殖利率高達 ${yieldPct.toFixed(2)}%，遠超銀行定存。`);
     } else if (yieldPct >= 3.5) {
       pros.push(`💸 穩定高配息：具備 ${yieldPct.toFixed(2)}% 的穩健殖利率，防守性佳。`);
+    } else if (isTech && !isHighDivFocus) {
+      pros.push(`🚀 科技成長定位：低配息率反映公司積極進行資本支出以擴大在手訂單。`);
     }
 
     if (pe !== null && pe > 0 && pe < 15.0) {
       pros.push(`📉 估值相對便宜：本益比僅 ${pe.toFixed(2)} 倍，投資性價比高。`);
+    } else if (pe !== null && pe > 25.0 && isTech && !isHighDivFocus) {
+      pros.push(`📈 享有市場合理溢價：高本益比反映強勁的接單能力與高壁壘技術稀缺性。`);
     }
+
     if (pb !== null && pb > 0 && pb < 1.3) {
       pros.push(`🛡️ 具備安全邊際：股價淨值比僅 ${pb.toFixed(2)}，資產清算價值扎實。`);
     }
+
+    if (fundamentalsData && fundamentalsData.orderVisibility.includes('2 ~ 3 季')) {
+      pros.push(`🏢 訂單能見度極佳：在手訂單能見度長達 2~3 季，產能全線滿載。`);
+    }
+
     if (changeVal > 0) {
       const vol = parseInt(stock.TradeVolume) || 0;
       if (vol > 10000 * 1000) {
@@ -391,18 +570,20 @@ export default function StockDetail({
     // 風險/缺點分析
     if (pe === null || pe <= 0) {
       cons.push(`🚨 企業近期虧損：目前暫無本益比（營運呈挑戰狀態），風險較高。`);
-    } else if (pe > 25.0) {
-      cons.push(`⚠️ 估值溢價偏高：本益比達 ${pe.toFixed(2)} 倍，遠超歷史均值，有修正風險。`);
+    } else if (pe > 25.0 && !isTech) {
+      cons.push(`⚠️ 估值溢價偏高：非科技股本益比達 ${pe.toFixed(2)} 倍，防修正拉回。`);
     }
 
     if (pb !== null && pb > 3.0) {
       cons.push(`⚠️ 高資產溢價：股價淨值比達 ${pb.toFixed(2)} 倍，資產泡沫化程度較高。`);
     }
 
-    if (yieldPct < 2.0 && yieldPct > 0) {
-      cons.push(`💸 股利收益極低：殖利率僅 ${yieldPct.toFixed(2)}%，不適合尋求現金流的投資人。`);
-    } else if (yieldPct === 0) {
-      cons.push(`❌ 當前無配息：今年度不配發股利，資金缺乏息收保護。`);
+    if (isHighDivFocus) {
+      if (yieldPct < 2.0 && yieldPct > 0) {
+        cons.push(`💸 股利收益極低：殖利率僅 ${yieldPct.toFixed(2)}%，不符合高股息配置導向。`);
+      } else if (yieldPct === 0) {
+        cons.push(`❌ 當前無配息：今年度不配發股利，資金缺乏息收保護。`);
+      }
     }
 
     if (changeVal < 0) {
@@ -414,7 +595,7 @@ export default function StockDetail({
     if (cons.length === 0) cons.push("⚖️ 波動溫和：目前無明顯的高估值溢價或劇烈下跌風險。");
 
     return { pros, cons };
-  }, [stock, changeVal]);
+  }, [stock, changeVal, fundamentalsData, activeStrategy]);
 
   // 6. 生成 30 日歷史模擬走勢
   const chartData = useMemo(() => {
@@ -1035,89 +1216,217 @@ export default function StockDetail({
                   <h3 style={{ fontSize: '0.95rem', fontWeight: 800 }}>智慧選股投資評鑑面板</h3>
                 </div>
 
-                {/* 綜合得分評等 */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', borderRadius: '15px', background: `rgba(255, 255, 255, 0.03)`, border: `2px solid ${valuationRating.gradeColor}`, boxShadow: `0 0 15px ${valuationRating.gradeColor}40`, color: valuationRating.gradeColor, fontSize: '2.1rem', fontWeight: 900, fontFamily: 'Outfit' }}>
-                    {valuationRating.grade}
-                  </div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '1.1rem', fontWeight: 800 }}>綜合評級：{valuationRating.grade} 級</span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>(得分 {valuationRating.score}/100)</span>
+                {/* 綜合得分與流動性安全徽章 */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '14px', background: `rgba(255, 255, 255, 0.03)`, border: `2px solid ${valuationRating.gradeColor}`, boxShadow: `0 0 15px ${valuationRating.gradeColor}40`, color: valuationRating.gradeColor, fontSize: '1.9rem', fontWeight: 900, fontFamily: 'Outfit' }}>
+                      {valuationRating.grade}
                     </div>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem', fontWeight: 600 }}>
-                      💬 {valuationRating.gradeDesc}
-                    </p>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '1.05rem', fontWeight: 800 }}>綜合評級：{valuationRating.grade} 級</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>(得分 {valuationRating.score}/100)</span>
+                      </div>
+                      <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.15rem', fontWeight: 600, maxWidth: '280px', lineHeight: '1.3' }}>
+                        💬 {valuationRating.gradeDesc}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* 流通性安全健康徽章 (Liquidity Health Badge) */}
+                  <div style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '4px',
+                    padding: '0.25rem 0.6rem', 
+                    borderRadius: '6px', 
+                    fontSize: '0.72rem', 
+                    fontWeight: 800,
+                    background: valuationRating.liquidityLevel === 'extremely_low'
+                      ? 'rgba(239, 68, 68, 0.08)'
+                      : valuationRating.liquidityLevel === 'low'
+                        ? 'rgba(245, 158, 11, 0.08)'
+                        : 'rgba(16, 185, 129, 0.08)',
+                    border: valuationRating.liquidityLevel === 'extremely_low' 
+                      ? '1px solid rgba(239, 68, 68, 0.3)' 
+                      : valuationRating.liquidityLevel === 'low' 
+                        ? '1px solid rgba(245, 158, 11, 0.3)' 
+                        : '1px solid rgba(16, 185, 129, 0.3)',
+                    color: valuationRating.liquidityLevel === 'extremely_low'
+                      ? '#f87171'
+                      : valuationRating.liquidityLevel === 'low'
+                        ? '#fbbf24'
+                        : '#34d399',
+                  }}>
+                    <span>💧 流通安全：{valuationRating.liqLevelText}</span>
                   </div>
                 </div>
 
-                {/* 💧 獨家流動性風險安全診斷面板 */}
+                {/* 📊 核心六大投資價值維度解析進度網格 (6-Dimension Bar Grid) */}
                 <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(2, 1fr)', 
+                  gap: '0.75rem',
                   marginBottom: '1.25rem',
-                  padding: '0.75rem 1rem', 
-                  borderRadius: '10px', 
-                  border: valuationRating.liquidityLevel === 'extremely_low' 
-                    ? '1px solid rgba(239, 68, 68, 0.25)' 
-                    : valuationRating.liquidityLevel === 'low' 
-                      ? '1px solid rgba(245, 158, 11, 0.25)' 
-                      : valuationRating.liquidityLevel === 'high'
-                        ? '1px solid rgba(0, 230, 118, 0.25)'
-                        : '1px solid rgba(56, 189, 248, 0.25)',
-                  background: valuationRating.liquidityLevel === 'extremely_low'
-                    ? 'rgba(239, 68, 68, 0.04)'
-                    : valuationRating.liquidityLevel === 'low'
-                      ? 'rgba(245, 158, 11, 0.04)'
-                      : valuationRating.liquidityLevel === 'high'
-                        ? 'rgba(0, 230, 118, 0.04)'
-                        : 'rgba(56, 189, 248, 0.04)',
+                  padding: '0.75rem',
+                  background: 'rgba(255, 255, 255, 0.01)',
+                  border: '1px solid rgba(255, 255, 255, 0.03)',
+                  borderRadius: '10px'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    <span>💧 流動性安全診斷：</span>
+                  {/* 維度 1: 接單能力 */}
+                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <ShieldCheck size={10} style={{ color: 'var(--accent-blue)' }} /> 接單量能
+                      </span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent-blue)' }}>
+                        {valuationRating.fundScore}分 ({valuationRating.orderLevel})
+                      </span>
+                    </div>
+                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${valuationRating.fundScore}%`, height: '100%', background: 'linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%)' }} />
+                    </div>
+                  </div>
+
+                  {/* 維度 2: 技術動能 */}
+                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <TrendingUp size={10} style={{ color: 'var(--stock-up)' }} /> 技術結構
+                      </span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--stock-up)' }}>
+                        {valuationRating.techScore}分 ({valuationRating.techLevel})
+                      </span>
+                    </div>
+                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${valuationRating.techScore}%`, height: '100%', background: 'linear-gradient(90deg, #f43f5e 0%, #e11d48 100%)' }} />
+                    </div>
+                  </div>
+
+                  {/* 維度 3: 籌碼集中 */}
+                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Flame size={10} style={{ color: 'var(--accent-purple)' }} /> 籌碼大戶
+                      </span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent-purple)' }}>
+                        {valuationRating.chipScore}分 ({valuationRating.chipLevel})
+                      </span>
+                    </div>
+                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${valuationRating.chipScore}%`, height: '100%', background: 'linear-gradient(90deg, #c084fc 0%, #a855f7 100%)' }} />
+                    </div>
+                  </div>
+
+                  {/* 維度 4: 產業稀缺 */}
+                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Star size={10} style={{ color: 'var(--accent-gold)' }} /> 趨勢稀缺
+                      </span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--accent-gold)' }}>
+                        {valuationRating.trendScore}分 ({valuationRating.trendLevel})
+                      </span>
+                    </div>
+                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${valuationRating.trendScore}%`, height: '100%', background: 'linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%)' }} />
+                    </div>
+                  </div>
+
+                  {/* 維度 5: 合理估值 */}
+                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Coins size={10} style={{ color: '#06b6d4' }} /> 估值股利
+                      </span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#06b6d4' }}>
+                        {valuationRating.valScore}分 ({valuationRating.valLevel})
+                      </span>
+                    </div>
+                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${valuationRating.valScore}%`, height: '100%', background: 'linear-gradient(90deg, #22d3ee 0%, #06b6d4 100%)' }} />
+                    </div>
+                  </div>
+
+                  {/* 維度 6: 流通安全 */}
+                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Activity size={10} style={{ color: '#10b981' }} /> 流通安全
+                      </span>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#10b981' }}>
+                        {valuationRating.liqScore}分 ({valuationRating.liqLevelText})
+                      </span>
+                    </div>
+                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                      <div style={{ width: `${valuationRating.liqScore}%`, height: '100%', background: 'linear-gradient(90deg, #34d399 0%, #10b981 100%)' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 💧 資金流通性安全診斷面板 (單獨說明卡片) */}
+                <div style={{ 
+                  marginBottom: '1.15rem',
+                  padding: '0.65rem 0.85rem', 
+                  borderRadius: '8px', 
+                  border: valuationRating.liquidityLevel === 'extremely_low' 
+                    ? '1px solid rgba(239, 68, 68, 0.2)' 
+                    : valuationRating.liquidityLevel === 'low' 
+                      ? '1px solid rgba(245, 158, 11, 0.2)' 
+                      : '1px solid rgba(16, 185, 129, 0.15)',
+                  background: valuationRating.liquidityLevel === 'extremely_low'
+                    ? 'rgba(239, 68, 68, 0.03)'
+                    : valuationRating.liquidityLevel === 'low'
+                      ? 'rgba(245, 158, 11, 0.03)'
+                      : 'rgba(16, 185, 129, 0.02)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    <span>💧 資金流通健康診斷：</span>
                     {valuationRating.liquidityLevel === 'extremely_low' && (
-                      <span style={{ color: 'var(--stock-up)', fontWeight: 900 }}>殭屍股 (極高風險 🚨)</span>
+                      <span style={{ color: 'var(--stock-up)', fontWeight: 900 }}>極高風險殭屍股 🚨</span>
                     )}
                     {valuationRating.liquidityLevel === 'low' && (
-                      <span style={{ color: 'var(--accent-gold)', fontWeight: 900 }}>冷門股 (中低流動性 ⚠️)</span>
+                      <span style={{ color: 'var(--accent-gold)', fontWeight: 900 }}>中低流動冷門股 ⚠️</span>
                     )}
                     {valuationRating.liquidityLevel === 'decent' && (
-                      <span style={{ color: 'var(--accent-blue)', fontWeight: 900 }}>合格股 (流動性正常 ✓)</span>
+                      <span style={{ color: 'var(--accent-blue)', fontWeight: 900 }}>合格流動標的 ✓</span>
                     )}
                     {valuationRating.liquidityLevel === 'high' && (
-                      <span style={{ color: 'var(--stock-down)', fontWeight: 900 }}>熱門主力愛股 (流動性充沛 🔥)</span>
+                      <span style={{ color: '#10b981', fontWeight: 900 }}>資金愛戴熱門股 🔥</span>
                     )}
                   </div>
-                  <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: '1.45', margin: 0 }}>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: '1.4', margin: 0 }}>
                     {valuationRating.liquidityLevel === 'extremely_low' && (
-                      `警告：日成交量僅 ${valuationRating.volChang} 張。屬於流動性極低之冷門殭屍股，完全缺乏大戶、外資與投信青睞。大筆交易將面臨嚴重滑點，面臨買不到、賣不掉的變現危機，強烈不建議買進！`
+                      `日均量 ${valuationRating.volChang} 張。流動性匱乏，大筆交易面臨變現困難與極大折溢價滑點！`
                     )}
                     {valuationRating.liquidityLevel === 'low' && (
-                      `提醒：日成交量僅 ${valuationRating.volChang} 張。買賣盤口較為稀疏，法人生意寥寥，大筆單進出易引發價格劇烈波動，建議嚴格控管投資部位。`
+                      `日均量 ${valuationRating.volChang} 張。買賣掛單稀疏，法人生意冷清，中大額進出易引發價格劇烈波動。`
                     )}
                     {valuationRating.liquidityLevel === 'decent' && (
-                      `說明：日成交量為 ${valuationRating.volChang} 張。流動性表現一般，適合散戶正常小額投資交易，滑點風險在正常範疇內。`
+                      `日均量 ${valuationRating.volChang} 張。流動性表現一般，完全足夠零售及小額交易者流暢買賣。`
                     )}
                     {valuationRating.liquidityLevel === 'high' && (
-                      `優勢：日成交量高達 ${valuationRating.volChang.toLocaleString()} 張。三大法人與大戶著墨極深，盤口厚實，買賣點價差窄，為短線飆股與資金避風港的黃金首選！`
+                      `日均量高達 ${valuationRating.volChang.toLocaleString()} 張。三大法人與市場大戶積極交投，買賣價差窄，極度流暢。`
                     )}
                   </p>
                 </div>
 
                 {/* 優缺點動態文字分析 */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   {/* 優點 */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                     {prosAndCons.pros.map((pro, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '6px', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                        <span style={{ color: 'var(--stock-down)', fontWeight: 'bold' }}>✓</span>
+                      <div key={idx} style={{ display: 'flex', gap: '5px', fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: '1.35' }}>
+                        <span style={{ color: '#10b981', fontWeight: 'bold' }}>✓</span>
                         <span>{pro}</span>
                       </div>
                     ))}
                   </div>
                   
                   {/* 缺點 */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.25rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.15rem' }}>
                     {prosAndCons.cons.map((con, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '6px', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                      <div key={idx} style={{ display: 'flex', gap: '5px', fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: '1.35' }}>
                         <span style={{ color: 'var(--stock-up)', fontWeight: 'bold' }}>✗</span>
                         <span>{con}</span>
                       </div>
