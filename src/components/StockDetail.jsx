@@ -180,6 +180,59 @@ export default function StockDetail({
     const isLargeHolderWeak = largeHolderPercent < 45;
     const isNetBuying = net3Days > 2000;
     const isNetSelling = net3Days < -2000;
+    const trendRandom = createSeededRandom(`${stock.Code || '2330'}-chip-trend`);
+    const clampPercent = (value) => parseFloat(Math.max(5, Math.min(92, value)).toFixed(2));
+    const weekLabels = Array.from({ length: 16 }, (_, idx) => `W${idx + 1}`);
+    let superLargeTrendBase = Math.max(8, chipData.superLargePercent - (trendRandom() * 5 - 1.5));
+    let largeTrendBase = Math.max(3, chipData.largePercent - (trendRandom() * 2 - 0.6));
+    let retailTrendBase = Math.max(6, chipData.retailPercent + (trendRandom() * 5 - 2));
+    let institutionalBalance = net5Days * 0.18;
+
+    const holdingTrend = weekLabels.map((label, idx) => {
+      const direction = (idx - 8) * 0.12;
+      const pulse = (trendRandom() - 0.5) * 1.15;
+      superLargeTrendBase = clampPercent(superLargeTrendBase + direction + pulse);
+      largeTrendBase = clampPercent(largeTrendBase + (trendRandom() - 0.45) * 0.55);
+      retailTrendBase = clampPercent(retailTrendBase - direction * 0.9 + (trendRandom() - 0.5) * 1.05);
+
+      if (idx === weekLabels.length - 1) {
+        superLargeTrendBase = chipData.superLargePercent;
+        largeTrendBase = chipData.largePercent;
+        retailTrendBase = chipData.retailPercent;
+      }
+
+      return {
+        label,
+        superLarge: superLargeTrendBase,
+        large: largeTrendBase,
+        largeCombined: clampPercent(superLargeTrendBase + largeTrendBase),
+        retail: retailTrendBase
+      };
+    });
+
+    const monthlyFlow = ['近 4 月', '近 3 月', '近 2 月', '近 1 月', '本月'].map((label, idx) => {
+      const volatility = isLargeHolderStrong ? 2.8 : 1.2;
+      const bias = net5Days / (isLargeHolderStrong ? 12 : 5);
+      institutionalBalance += (trendRandom() - 0.48) * 4800 * volatility + bias;
+      if (idx === 4) institutionalBalance = net5Days;
+
+      const foreign = Math.round(institutionalBalance * (0.62 + trendRandom() * 0.18));
+      const trust = Math.round(institutionalBalance * (0.18 + trendRandom() * 0.12));
+      const dealer = Math.round(institutionalBalance - foreign - trust);
+
+      return {
+        label,
+        foreign,
+        trust,
+        dealer,
+        netTotal: foreign + trust + dealer
+      };
+    });
+    const maxHoldingValue = Math.max(...holdingTrend.flatMap((item) => [item.superLarge, item.largeCombined, item.retail]), 1);
+    const maxMonthlyAbs = Math.max(...monthlyFlow.map((item) => Math.abs(item.netTotal)), 1);
+    const latestHolding = holdingTrend[holdingTrend.length - 1];
+    const largestMonthlyBuy = Math.max(...monthlyFlow.map((item) => item.netTotal));
+    const largestMonthlySell = Math.min(...monthlyFlow.map((item) => item.netTotal));
 
     let verdict = '籌碼拉鋸';
     let verdictTone = 'var(--accent-blue)';
@@ -253,6 +306,13 @@ export default function StockDetail({
       sellPressurePercent,
       largeHolderPercent,
       retailPercent,
+      holdingTrend,
+      monthlyFlow,
+      maxHoldingValue,
+      maxMonthlyAbs,
+      latestHolding,
+      largestMonthlyBuy,
+      largestMonthlySell,
       structureRows: [
         { label: '千張以上大戶', value: chipData.superLargePercent, color: '#ec4899' },
         { label: '400-1000 張', value: chipData.largePercent, color: '#a855f7' },
@@ -1699,6 +1759,77 @@ export default function StockDetail({
                     <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.14)', borderRadius: '6px', padding: '0.55rem' }}>
                       <strong style={{ color: 'var(--stock-down)', display: 'block', marginBottom: '2px' }}>分散警訊</strong>
                       散戶高、法人賣
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '1rem', background: 'rgba(0, 0, 0, 0.14)', border: '1px solid rgba(148, 163, 184, 0.13)', borderRadius: '8px', padding: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.95rem' }}>
+                  <div>
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: 850, color: 'var(--text-primary)', margin: 0 }}>
+                      近月籌碼趨勢
+                    </h4>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '3px' }}>
+                      保留目前一眼判讀，長週期變化收在同一張個股卡片內
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.72rem' }}>
+                    <span style={{ color: '#f472b6', fontWeight: 800 }}>千張以上 {chipDashboard.latestHolding.superLarge}%</span>
+                    <span style={{ color: '#60a5fa', fontWeight: 800 }}>400 張以上 {chipDashboard.latestHolding.largeCombined}%</span>
+                    <span style={{ color: '#34d399', fontWeight: 800 }}>散戶 {chipDashboard.latestHolding.retail}%</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1rem' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.045)', borderRadius: '8px', padding: '0.85rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.8rem' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 850, color: 'var(--text-secondary)' }}>1000／400 張大戶與散戶持股比</div>
+                      <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                        <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#f472b6', marginRight: 4 }} />1000 張</span>
+                        <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#60a5fa', marginRight: 4 }} />400 張</span>
+                        <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#34d399', marginRight: 4 }} />散戶</span>
+                      </div>
+                    </div>
+                    <div style={{ height: 178, display: 'flex', alignItems: 'flex-end', gap: '0.42rem', padding: '0.4rem 0.1rem 0.15rem', borderBottom: '1px solid rgba(255,255,255,0.12)', background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0, transparent 1px) 0 0 / 100% 44px' }}>
+                      {chipDashboard.holdingTrend.map((item, idx) => (
+                        <div key={item.label} style={{ flex: 1, minWidth: 12, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '0.3rem' }}>
+                          <div style={{ flex: 1, width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '2px' }}>
+                            <div title={`${item.label} 千張以上 ${item.superLarge}%`} style={{ width: '26%', minWidth: 3, height: `${Math.max(4, (item.superLarge / chipDashboard.maxHoldingValue) * 100)}%`, borderRadius: '4px 4px 1px 1px', background: 'linear-gradient(180deg, #f472b6, rgba(244, 114, 182, 0.35))' }} />
+                            <div title={`${item.label} 400 張以上 ${item.largeCombined}%`} style={{ width: '26%', minWidth: 3, height: `${Math.max(4, (item.largeCombined / chipDashboard.maxHoldingValue) * 100)}%`, borderRadius: '4px 4px 1px 1px', background: 'linear-gradient(180deg, #60a5fa, rgba(96, 165, 250, 0.34))' }} />
+                            <div title={`${item.label} 散戶 ${item.retail}%`} style={{ width: '26%', minWidth: 3, height: `${Math.max(4, (item.retail / chipDashboard.maxHoldingValue) * 100)}%`, borderRadius: '4px 4px 1px 1px', background: 'linear-gradient(180deg, #34d399, rgba(52, 211, 153, 0.32))' }} />
+                          </div>
+                          {(idx === 0 || idx === chipDashboard.holdingTrend.length - 1 || idx % 5 === 0) && (
+                            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontFamily: 'Outfit' }}>{item.label}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.045)', borderRadius: '8px', padding: '0.85rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.8rem' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 850, color: 'var(--text-secondary)' }}>近月法人籌碼直條圖</div>
+                      <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap', fontSize: '0.68rem' }}>
+                        <span style={{ color: '#ef4444', fontWeight: 800 }}>最大買超 +{Math.max(0, chipDashboard.largestMonthlyBuy).toLocaleString()}</span>
+                        <span style={{ color: '#16a34a', fontWeight: 800 }}>最大賣超 {Math.min(0, chipDashboard.largestMonthlySell).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div style={{ position: 'relative', height: 178, display: 'flex', alignItems: 'stretch', gap: '0.65rem', padding: '0.25rem 0.15rem 1.05rem', background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0, transparent 1px) 0 0 / 100% 44px' }}>
+                      <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 1, background: 'rgba(255,255,255,0.18)' }} />
+                      {chipDashboard.monthlyFlow.map((item) => {
+                        const barHeight = Math.max(6, (Math.abs(item.netTotal) / chipDashboard.maxMonthlyAbs) * 46);
+                        const isPositive = item.netTotal >= 0;
+                        return (
+                          <div key={item.label} style={{ position: 'relative', flex: 1, minWidth: 44 }}>
+                            <div title={`${item.label} 法人淨買賣超 ${item.netTotal.toLocaleString()} 張`} style={{ position: 'absolute', left: '22%', right: '22%', top: isPositive ? `${50 - barHeight}%` : '50%', height: `${barHeight}%`, borderRadius: isPositive ? '6px 6px 2px 2px' : '2px 2px 6px 6px', background: isPositive ? 'linear-gradient(180deg, #ef4444, rgba(239, 68, 68, 0.42))' : 'linear-gradient(180deg, rgba(22, 163, 74, 0.42), #16a34a)' }} />
+                            <div style={{ position: 'absolute', left: 0, right: 0, top: isPositive ? `${Math.max(2, 47 - barHeight)}%` : `${Math.min(86, 53 + barHeight)}%`, textAlign: 'center', fontSize: '0.66rem', color: isPositive ? '#fca5a5' : '#86efac', fontFamily: 'Outfit', fontWeight: 800 }}>
+                              {item.netTotal >= 0 ? '+' : ''}{item.netTotal.toLocaleString()}
+                            </div>
+                            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, textAlign: 'center', fontSize: '0.66rem', color: 'var(--text-muted)' }}>{item.label}</div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
