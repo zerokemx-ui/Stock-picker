@@ -548,8 +548,8 @@ export default function App() {
               <Activity size={28} />
             </div>
             <h1 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
-              <span className="text-gradient-cyan">台股選股</span>
-              <span style={{ color: 'var(--text-primary)' }}>神器</span>
+              <span className="text-gradient-cyan">威力台股</span>
+              <span style={{ color: 'var(--text-primary)' }}>情報站</span>
             </h1>
             
             {/* 離線或備用數據狀態提示 badge */}
