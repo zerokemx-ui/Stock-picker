@@ -11,7 +11,8 @@ import {
   WifiOff,
   Settings,
   Zap,
-  Briefcase
+  Briefcase,
+  CalendarDays
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import StockFilter from './components/StockFilter';
@@ -561,13 +562,21 @@ export default function App() {
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem', fontWeight: 500 }}>
             ⚡ 整合每日最新收盤行情、本益比、殖利率、股價淨值比，一鍵鎖定黃金投資機會。
           </p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', marginTop: '0.75rem', padding: '0.45rem 0.7rem', borderRadius: '8px', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.18)', color: 'var(--text-secondary)' }}>
+            <CalendarDays size={15} style={{ color: 'var(--accent-blue)', flexShrink: 0 }} />
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 700 }}>最新資料日期</span>
+            <strong style={{ fontSize: '0.78rem', color: 'var(--text-primary)', fontFamily: 'Outfit', letterSpacing: 0 }}>
+              {lastUpdated || '載入中'}
+            </strong>
+          </div>
         </div>
 
         {/* 系統功能按鈕列 (刷新、自選股抽屜切換) */}
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, display: 'none', md: 'inline' }}>
-            數據更新：{lastUpdated || '載入中...'}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, padding: '0.55rem 0.7rem', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '8px', background: 'rgba(255,255,255,0.025)' }}>
+            <CalendarDays size={13} style={{ color: 'var(--accent-blue)' }} />
+            {lastUpdated || '載入中'}
           </span>
           
           <button 
