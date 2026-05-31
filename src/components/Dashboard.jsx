@@ -11,13 +11,15 @@ import {
 } from 'lucide-react';
 import { 
   formatValueInYi, 
+  calculateChangePercent,
   calculateChangeRate, 
   getChangeColorClass 
 } from '../utils/stockUtils';
 
 export default function Dashboard({ 
   stocks, 
-  onSelectStock
+  onSelectStock,
+  dataStatus = {}
 }) {
   // 1. 計算市場整體基本面統計
   const totalStocks = stocks.length;
@@ -94,37 +96,45 @@ export default function Dashboard({
   }, [isTaiwanMarketStrong]);
 
   // 3. 計算今日排行
-  // 今日漲幅前 5 名
-  const gainers = [...stocks]
+  const rankedStocks = [...stocks]
     .map(s => {
-      const price = parseFloat(s.ClosingPrice) || 0;
-      const chg = parseFloat(s.Change) || 0;
-      const prevPrice = price - chg;
-      const rate = prevPrice > 0 ? (chg / prevPrice) * 100 : 0;
-      return { ...s, changeRate: rate };
-    })
-    .sort((a, b) => b.changeRate - a.changeRate)
+      const changeRate = calculateChangePercent(s.ClosingPrice, s.Change);
+      const tradeValue = parseFloat(s.TradeValue) || 0;
+      return { ...s, changeRate, tradeValue };
+    });
+
+  const capitalFocus = rankedStocks
+    .filter(s => s.changeRate > 0)
+    .sort((a, b) => b.tradeValue - a.tradeValue)
     .slice(0, 5);
 
   // 今日跌幅前 5 名
-  const losers = [...stocks]
-    .map(s => {
-      const price = parseFloat(s.ClosingPrice) || 0;
-      const chg = parseFloat(s.Change) || 0;
-      const prevPrice = price - chg;
-      const rate = prevPrice > 0 ? (chg / prevPrice) * 100 : 0;
-      return { ...s, changeRate: rate };
-    })
+  const losers = rankedStocks
     .sort((a, b) => a.changeRate - b.changeRate)
     .slice(0, 5);
 
   // 今日成交值前 5 名 (熱門排行)
-  const volumeLeaders = [...stocks]
-    .sort((a, b) => parseFloat(b.TradeValue) - parseFloat(a.TradeValue))
+  const volumeLeaders = rankedStocks
+    .sort((a, b) => b.tradeValue - a.tradeValue)
     .slice(0, 5);
+
+  const limitUpLikeCount = rankedStocks.filter(s => s.changeRate >= 9.5).length;
+  const dataSourceText = dataStatus.isFallback
+    ? '目前沿用已發布快照，未混用假行情'
+    : `資料源：${dataStatus.source === 'twse_mi_index' ? 'TWSE 官方每日收盤行情' : 'TWSE 官方資料'}`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+      <div className="glass-card" style={{ padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', border: dataStatus.isFallback ? '1px solid rgba(245,158,11,0.2)' : '1px solid rgba(56,189,248,0.16)', background: dataStatus.isFallback ? 'rgba(245,158,11,0.055)' : 'rgba(56,189,248,0.045)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+          <Activity size={16} style={{ color: dataStatus.isFallback ? 'var(--accent-gold)' : 'var(--accent-blue)' }} />
+          <strong style={{ fontSize: '0.82rem', color: 'var(--text-primary)' }}>資料可信度狀態</strong>
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+          {dataSourceText} · 交易日 {dataStatus.dataDate || '讀取中'}
+        </div>
+      </div>
 
       {/* 🌍 全球美股大盤連動監測 (US Major Indices Tracker) */}
       <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--accent-purple)' }}>
@@ -277,14 +287,24 @@ export default function Dashboard({
       {/* 排行榜區塊 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
         
-        {/* 區塊 1: 今日漲幅前五名 */}
+        {/* 區塊 1: 資金焦點 */}
         <div className="glass-card" style={{ padding: '1.5rem 1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <TrendingUp className="up-text" size={20} />
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>今日漲幅領先</h3>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>今日資金焦點</h3>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.18rem' }}>
+                  依成交金額排序，排除單純漲停排名的雜訊
+                </div>
+              </div>
+            </div>
+            <span style={{ fontSize: '0.68rem', color: 'var(--accent-gold)', fontWeight: 800, padding: '0.18rem 0.45rem', border: '1px solid rgba(245,158,11,0.22)', borderRadius: '6px', background: 'rgba(245,158,11,0.08)', whiteSpace: 'nowrap' }}>
+              漲停附近 {limitUpLikeCount} 檔
+            </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-            {gainers.map((s, idx) => (
+            {capitalFocus.map((s, idx) => (
               <div 
                 key={s.Code} 
                 onClick={() => onSelectStock(s.Code)}
@@ -302,6 +322,9 @@ export default function Dashboard({
                   <div style={{ fontSize: '0.95rem', fontWeight: 700, fontFamily: 'Outfit' }}>{s.ClosingPrice}</div>
                   <div style={{ fontSize: '0.8rem', fontFamily: 'Outfit' }} className={getChangeColorClass(s.Change)}>
                     {calculateChangeRate(s.ClosingPrice, s.Change)}
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'Outfit', marginTop: '0.1rem' }}>
+                    {formatValueInYi(s.TradeValue)}
                   </div>
                 </div>
               </div>

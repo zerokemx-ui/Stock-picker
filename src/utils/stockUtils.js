@@ -47,9 +47,7 @@ export const PRESET_STRATEGIES = {
     icon: "Flame",
     criteriaDesc: "今日漲幅 ≥ 3% | 成交量 ≥ 3,000 張",
     filter: (stock) => {
-      const changePct = parseFloat(stock.Change) || 0;
-      const price = parseFloat(stock.ClosingPrice) || 0;
-      const changeRate = price > 0 ? (changePct / (price - changePct)) * 100 : 0;
+      const changeRate = calculateChangePercent(stock.ClosingPrice, stock.Change);
       const volume = parseInt(stock.TradeVolume) || 0;
       
       return changeRate >= 3.0 && volume >= 3000 * 1000; // 3,000張 * 1,000股/張
@@ -108,15 +106,20 @@ export function formatValueInYi(valueStr) {
 }
 
 // 4. 計算並格式化百分比漲跌幅
-export function calculateChangeRate(closingPriceStr, changeStr) {
+export function calculateChangePercent(closingPriceStr, changeStr) {
   const price = parseFloat(closingPriceStr) || 0;
   const change = parseFloat(changeStr) || 0;
-  if (price === 0) return '0.00%';
+  if (price === 0) return 0;
   
   const previousPrice = price - change;
-  if (previousPrice <= 0) return '0.00%';
+  if (previousPrice <= 0) return 0;
   
-  const rate = (change / previousPrice) * 100;
+  return (change / previousPrice) * 100;
+}
+
+export function calculateChangeRate(closingPriceStr, changeStr) {
+  const change = parseFloat(changeStr) || 0;
+  const rate = calculateChangePercent(closingPriceStr, changeStr);
   const sign = change > 0 ? '+' : '';
   return `${sign}${rate.toFixed(2)}%`;
 }

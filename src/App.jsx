@@ -43,6 +43,12 @@ export default function App() {
   const [error, setError] = useState(null);
   const [isOffline, setIsOffline] = useState(false);
   const [lastUpdated, setLastUpdated] = useState('');
+  const [dataStatus, setDataStatus] = useState({
+    source: '',
+    dataDate: '',
+    generatedAt: '',
+    isFallback: false
+  });
 
   // 2. 使用者自訂狀態 (自選股與對比)
   const [watchlist, setWatchlist] = useState(() => {
@@ -290,11 +296,19 @@ export default function App() {
       const resData = await response.json();
       if (resData.success && Array.isArray(resData.data)) {
         setStocks(resData.data);
-        setIsOffline(resData.source === 'fallback_mock' || resData.source === 'static_fallback' || resData.source === 'empty_fallback');
+        const isFallbackData = resData.isFallback || resData.source === 'static_fallback' || resData.source === 'empty_fallback';
+        setIsOffline(isFallbackData);
+        setDataStatus({
+          source: resData.source || '',
+          dataDate: resData.dataDate || '',
+          generatedAt: resData.generatedAt || resData.timestamp || '',
+          isFallback: isFallbackData
+        });
         
-        // 格式化最後更新時間
-        const updateDate = new Date(resData.timestamp);
-        setLastUpdated(updateDate.toLocaleString('zh-TW', { hour12: false }));
+        const displayDate = resData.dataDate
+          ? resData.dataDate
+          : new Date(resData.timestamp || resData.generatedAt).toLocaleString('zh-TW', { hour12: false });
+        setLastUpdated(displayDate);
         
         if (isRefresh) {
           if (usedStaticSnapshot) {
@@ -555,19 +569,22 @@ export default function App() {
             {/* 離線或備用數據狀態提示 badge */}
             {isOffline && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '0.2rem 0.5rem', background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-gold)', borderRadius: '4px', fontWeight: 600 }}>
-                <WifiOff size={12} /> 離線備用行情
+                <WifiOff size={12} /> 沿用已發布快照
               </span>
             )}
           </div>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem', fontWeight: 500 }}>
             ⚡ 整合每日最新收盤行情、本益比、殖利率、股價淨值比，一鍵鎖定黃金投資機會。
           </p>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', marginTop: '0.75rem', padding: '0.45rem 0.7rem', borderRadius: '8px', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.18)', color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', marginTop: '0.75rem', padding: '0.45rem 0.7rem', borderRadius: '8px', background: isOffline ? 'rgba(245, 158, 11, 0.08)' : 'rgba(56, 189, 248, 0.08)', border: isOffline ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(56, 189, 248, 0.18)', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
             <CalendarDays size={15} style={{ color: 'var(--accent-blue)', flexShrink: 0 }} />
-            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 700 }}>最新資料日期</span>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 700 }}>行情交易日</span>
             <strong style={{ fontSize: '0.78rem', color: 'var(--text-primary)', fontFamily: 'Outfit', letterSpacing: 0 }}>
               {lastUpdated || '載入中'}
             </strong>
+            <span style={{ fontSize: '0.68rem', color: isOffline ? 'var(--accent-gold)' : 'var(--accent-blue)', fontWeight: 700 }}>
+              {isOffline ? '資料源異常，未使用假行情' : 'TWSE 官方收盤資料'}
+            </span>
           </div>
         </div>
 
@@ -714,11 +731,8 @@ export default function App() {
             <button onClick={() => fetchStocksData()} className="btn-primary">重試連線</button>
             <button onClick={() => {
               // 載入備用數據
-              setStocks(fallbackMockStocks);
-              setIsOffline(true);
-              setError(null);
-              showToast("⚠️ 已為您切換至離線預置數據");
-            }} className="btn-secondary">載入離線備用數據</button>
+              fetchStocksData(false);
+            }} className="btn-secondary">重讀已發布快照</button>
           </div>
         </div>
       )}
@@ -748,6 +762,7 @@ export default function App() {
               <Dashboard 
                 stocks={stocks} 
                 onSelectStock={handleSelectStock} 
+                dataStatus={dataStatus}
               />
             )}
 

@@ -1,7 +1,10 @@
 {
   "success": true,
   "source": "twse_mi_index",
-  "timestamp": "2026-05-31T09:21:57.242Z",
+  "dataDate": "2026-05-29",
+  "generatedAt": "2026-05-31T15:48:48.559Z",
+  "timestamp": "2026-05-31T15:48:48.559Z",
+  "isFallback": false,
   "count": 1356,
   "data": [
     {

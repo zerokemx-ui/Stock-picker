@@ -43,6 +43,13 @@ function formatNumber(value) {
   return parseNumber(value).toFixed(2);
 }
 
+function formatRocDate(dateText) {
+  const raw = String(dateText || '');
+  if (!/^\d{7}$/.test(raw)) return '';
+  const year = Number(raw.slice(0, 3)) + 1911;
+  return `${year}-${raw.slice(3, 5)}-${raw.slice(5, 7)}`;
+}
+
 function chunkArray(items, size) {
   const chunks = [];
   for (let i = 0; i < items.length; i += size) {
@@ -61,13 +68,13 @@ async function fetchJson(url, options = {}) {
 
 function readStaticFallback() {
   if (!fs.existsSync(STATIC_DATA_PATH)) {
-    return [];
+    return null;
   }
   try {
     const payload = JSON.parse(fs.readFileSync(STATIC_DATA_PATH, 'utf8'));
-    return Array.isArray(payload.data) ? payload.data : [];
+    return Array.isArray(payload.data) ? payload : null;
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -167,6 +174,7 @@ export async function fetchTaiwanStockData() {
           Category: getCategoryByCode(item.Code)
         };
       });
+    const dataDate = formatRocDate(stockDayData.find(item => item.Date)?.Date);
 
     const realtimeMap = await fetchRealtimeMap(baseItems.map(item => item.Code));
     let realtimeCount = 0;
@@ -209,6 +217,8 @@ export async function fetchTaiwanStockData() {
     return {
       success: true,
       source: realtimeCount > 0 ? 'twse_mis_live' : 'twse_api',
+      dataDate,
+      generatedAt: new Date().toISOString(),
       timestamp: new Date().toISOString(),
       count: mergedList.length,
       realtimeCount,
@@ -216,11 +226,15 @@ export async function fetchTaiwanStockData() {
     };
   } catch (error) {
     console.error('Error fetching TWSE data, falling back to current static snapshot:', error.message);
-    const fallback = readStaticFallback();
+    const fallbackPayload = readStaticFallback();
+    const fallback = fallbackPayload?.data || [];
     return {
       success: true,
       source: fallback.length ? 'static_fallback' : 'empty_fallback',
-      timestamp: new Date().toISOString(),
+      dataDate: fallbackPayload?.dataDate || '',
+      generatedAt: new Date().toISOString(),
+      timestamp: fallbackPayload?.timestamp || fallbackPayload?.generatedAt || new Date().toISOString(),
+      isFallback: true,
       count: fallback.length,
       realtimeCount: 0,
       data: fallback
