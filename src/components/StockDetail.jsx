@@ -12,7 +12,8 @@ import {
   ShieldCheck, 
   Activity,
   Award,
-  AlertCircle
+  AlertCircle,
+  HelpCircle
 } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -63,6 +64,69 @@ const createSeededRandom = (seedString) => {
   };
 };
 
+const chipHelpContent = {
+  verdict: {
+    title: '目前籌碼狀態',
+    body: '這是把大戶持股、散戶持股與近幾日法人買賣超合併後的快速結論。它不是買賣建議，而是提醒目前籌碼偏向集中、分散、法人回補或法人調節。',
+    good: '大戶集中度高、法人同步買超，通常代表籌碼較穩。',
+    watch: '如果大戶集中度不高，但法人短線買超，只能視為短線買盤回補，還要觀察後續大戶是否增加。'
+  },
+  largeHolder: {
+    title: '大戶持股合計',
+    body: '這裡把千張以上大戶與 400-1000 張持股族群加總，代表較有資金實力的持股者掌握多少股權。',
+    good: '數值越高通常越集中，籌碼較不容易被短線散戶情緒牽動。',
+    watch: '不是只看它有沒有高於散戶，而是看是否足夠集中。低於約 60%-65% 時，代表大戶掌握度不算強。'
+  },
+  retailPressure: {
+    title: '散戶持股壓力',
+    body: '這是 10 張以下小股東的持股比重。散戶比重越高，代表籌碼越分散，價格轉弱時比較容易出現恐慌賣壓或追高套牢。',
+    good: '散戶占比偏低通常較健康，代表股權比較集中。',
+    watch: '超過約 35% 就要提高警覺；40% 以上通常視為散戶偏高，不一定立刻不好，但籌碼穩定度較弱。'
+  },
+  institutional3d: {
+    title: '近 3 日法人',
+    body: '統計近 3 個交易日三大法人淨買賣超。正數代表買超，負數代表賣超。',
+    good: '連續買超代表短線有資金回補。',
+    watch: '只看 3 日會比較短，容易受到單日大單影響，需要搭配 5 日與大戶持股一起看。'
+  },
+  institutional5d: {
+    title: '近 5 日法人',
+    body: '統計近 5 個交易日三大法人淨買賣超，比 3 日更能看出短線資金方向是否延續。',
+    good: '5 日買超延續，通常比單日或 3 日買超更有參考價值。',
+    watch: '如果 3 日買超但 5 日仍偏弱，代表可能只是短線反彈，不一定是籌碼轉強。'
+  },
+  pressure: {
+    title: '法人買賣壓力',
+    body: '這是把近 5 日每天的法人淨買超加總成買壓，把淨賣超加總成賣壓，再換算成百分比。95% 買壓代表近 5 日法人買超量遠大於賣超量。',
+    good: '台股慣例紅色偏多、綠色偏空，所以買壓會用紅色，賣壓會用綠色。',
+    watch: '買壓高代表短線資金偏買，但若大戶持股沒有同步提高，仍可能只是短線法人回補。'
+  },
+  ownership: {
+    title: '股權結構分布',
+    body: '這條長條圖把不同持股級距攤開：千張以上、400-1000 張、10-400 張、10 張以下散戶。它用來看籌碼是集中在大戶，還是分散在中小股東。',
+    good: '大戶區塊越大、散戶區塊越小，通常籌碼越集中。',
+    watch: '即使大戶合計略高於散戶，只要散戶占比接近或超過 40%，仍代表市場浮動籌碼偏多。'
+  },
+  dispersion: {
+    title: '股權分散診斷',
+    body: '這是用大戶持股合計與散戶持股壓力做出的結構判讀。它不是比較誰比較多，而是看籌碼是否足夠集中、散戶占比是否偏高。',
+    good: '強集中：大戶高、散戶低，籌碼較穩。',
+    watch: '散戶偏高：大戶掌握度不足或散戶占比過高，價格轉弱時容易有較多籌碼壓力。'
+  },
+  holdingTrend: {
+    title: '1000／400 張大戶與散戶持股比',
+    body: '這張圖看近幾週不同持股級距的變化。粉色是千張以上，藍色是 400 張以上合計，綠色是散戶。',
+    good: '大戶線往上、散戶往下，通常代表籌碼集中改善。',
+    watch: '大戶下降、散戶上升，代表籌碼往小股東分散，後續波動可能變大。'
+  },
+  monthlyFlow: {
+    title: '近月法人籌碼直條圖',
+    body: '這張圖把近幾個月法人淨買賣超轉成柱狀圖。紅柱代表買超，綠柱代表賣超。',
+    good: '連續紅柱代表法人資金持續流入。',
+    watch: '如果最近一個月突然轉綠，代表法人開始調節，要回頭看股價是否已經漲多或基本面是否轉弱。'
+  }
+};
+
 export default function StockDetail({
   stockCode,
   stocks,
@@ -82,6 +146,7 @@ export default function StockDetail({
   // 1.2. 實時行情狀態變數
   const [liveStockData, setLiveStockData] = useState(null);
   const [isLiveLoading, setIsLiveLoading] = useState(false);
+  const [chipHelpKey, setChipHelpKey] = useState(null);
 
   // 1.3. 實時價格輪詢 useEffect (每 15 秒同步一次)
   useEffect(() => {
@@ -252,17 +317,17 @@ export default function StockDetail({
     } else if (isLargeHolderWeak && isNetSelling) {
       verdict = '籌碼分散降溫';
       verdictTone = 'var(--stock-down)';
-      verdictBg = 'rgba(239, 68, 68, 0.1)';
+      verdictBg = 'rgba(34, 197, 94, 0.1)';
       verdictCopy = '大戶持股比偏低且法人近 3 日偏賣，需留意籌碼鬆動與追價風險。';
     } else if (isNetBuying) {
       verdict = '買盤回補';
       verdictTone = 'var(--stock-up)';
-      verdictBg = 'rgba(34, 197, 94, 0.1)';
+      verdictBg = 'rgba(239, 68, 68, 0.1)';
       verdictCopy = '短線法人轉為偏買，但大戶集中度仍需觀察是否同步提升。';
     } else if (isNetSelling) {
       verdict = '法人調節';
       verdictTone = 'var(--stock-down)';
-      verdictBg = 'rgba(239, 68, 68, 0.1)';
+      verdictBg = 'rgba(34, 197, 94, 0.1)';
       verdictCopy = '近 3 日法人偏賣，短線籌碼轉弱，先確認賣壓是否收斂。';
     }
 
@@ -280,9 +345,9 @@ export default function StockDetail({
           }
         : !isLargeHolderStrong && retailPercent >= 35
           ? {
-              title: '分散偏高',
-              tone: 'var(--stock-down)',
-              copy: '散戶持股比偏高，若價格轉弱容易形成籌碼壓力。'
+              title: '散戶偏高',
+              tone: '#fbbf24',
+              copy: '散戶占比偏高，代表籌碼較分散；即使大戶合計略高於散戶，掌握度仍不算強。'
             }
           : {
               title: '中性換手',
@@ -306,6 +371,7 @@ export default function StockDetail({
       sellPressurePercent,
       largeHolderPercent,
       retailPercent,
+      ownershipGap: parseFloat((largeHolderPercent - retailPercent).toFixed(2)),
       holdingTrend,
       monthlyFlow,
       maxHoldingValue,
@@ -1025,6 +1091,32 @@ export default function StockDetail({
 
   const isLimitUp = limitUpPrice !== null && closingPrice >= limitUpPrice;
   const isLimitDown = limitDownPrice !== null && closingPrice <= limitDownPrice;
+  const chipHelp = chipHelpKey ? chipHelpContent[chipHelpKey] : null;
+  const renderChipHelpButton = (helpKey, label = '說明') => (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        setChipHelpKey(helpKey);
+      }}
+      title={label}
+      style={{
+        border: '1px solid rgba(56, 189, 248, 0.22)',
+        background: 'rgba(56, 189, 248, 0.08)',
+        color: 'var(--accent-blue)',
+        width: 22,
+        height: 22,
+        borderRadius: '50%',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        flexShrink: 0
+      }}
+    >
+      <HelpCircle size={13} />
+    </button>
+  );
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
@@ -1644,7 +1736,10 @@ export default function StockDetail({
 
                 <div style={{ minWidth: '220px', padding: '0.65rem 0.8rem', borderRadius: '8px', background: chipDashboard.verdictBg, border: `1px solid ${chipDashboard.verdictTone}35` }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>目前籌碼狀態</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                      目前籌碼狀態
+                      {renderChipHelpButton('verdict')}
+                    </span>
                     <strong style={{ color: chipDashboard.verdictTone, fontSize: '0.95rem' }}>{chipDashboard.verdict}</strong>
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '0.35rem' }}>
@@ -1656,21 +1751,25 @@ export default function StockDetail({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   {[
-                    { label: '大戶持股合計', value: `${chipDashboard.largeHolderPercent}%`, icon: ShieldCheck, tone: chipDashboard.largeHolderPercent >= 65 ? 'var(--stock-up)' : 'var(--accent-blue)' },
-                    { label: '散戶持股壓力', value: `${chipDashboard.retailPercent}%`, icon: AlertCircle, tone: chipDashboard.retailPercent >= 35 ? 'var(--stock-down)' : 'var(--text-secondary)' },
-                    { label: '近 3 日法人', value: `${chipDashboard.net3Days >= 0 ? '+' : ''}${chipDashboard.net3Days.toLocaleString()} 張`, icon: chipDashboard.net3Days >= 0 ? TrendingUp : TrendingDown, tone: chipDashboard.net3Days >= 0 ? 'var(--stock-up)' : 'var(--stock-down)' },
-                    { label: '近 5 日法人', value: `${chipDashboard.net5Days >= 0 ? '+' : ''}${chipDashboard.net5Days.toLocaleString()} 張`, icon: chipDashboard.net5Days >= 0 ? TrendingUp : TrendingDown, tone: chipDashboard.net5Days >= 0 ? 'var(--stock-up)' : 'var(--stock-down)' }
+                    { label: '大戶持股合計', value: `${chipDashboard.largeHolderPercent}%`, icon: ShieldCheck, tone: chipDashboard.largeHolderPercent >= 65 ? 'var(--stock-up)' : 'var(--accent-blue)', helpKey: 'largeHolder', note: chipDashboard.largeHolderPercent >= 65 ? '集中度較佳' : '集中度未達強勢' },
+                    { label: '散戶持股壓力', value: `${chipDashboard.retailPercent}%`, icon: AlertCircle, tone: chipDashboard.retailPercent >= 35 ? '#fbbf24' : 'var(--accent-blue)', helpKey: 'retailPressure', note: chipDashboard.retailPercent >= 35 ? '偏高，需留意' : '壓力較低' },
+                    { label: '近 3 日法人', value: `${chipDashboard.net3Days >= 0 ? '+' : ''}${chipDashboard.net3Days.toLocaleString()} 張`, icon: chipDashboard.net3Days >= 0 ? TrendingUp : TrendingDown, tone: chipDashboard.net3Days >= 0 ? 'var(--stock-up)' : 'var(--stock-down)', helpKey: 'institutional3d', note: chipDashboard.net3Days >= 0 ? '短線買超' : '短線賣超' },
+                    { label: '近 5 日法人', value: `${chipDashboard.net5Days >= 0 ? '+' : ''}${chipDashboard.net5Days.toLocaleString()} 張`, icon: chipDashboard.net5Days >= 0 ? TrendingUp : TrendingDown, tone: chipDashboard.net5Days >= 0 ? 'var(--stock-up)' : 'var(--stock-down)', helpKey: 'institutional5d', note: chipDashboard.net5Days >= 0 ? '買盤延續' : '賣壓延續' }
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
                       <div key={item.label} style={{ background: 'rgba(0, 0, 0, 0.16)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.85rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>{item.label}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                            {item.label}
+                            {renderChipHelpButton(item.helpKey)}
+                          </span>
                           <Icon size={15} style={{ color: item.tone }} />
                         </div>
                         <div style={{ fontFamily: 'Outfit', fontSize: '1.1rem', fontWeight: 850, color: item.tone, lineHeight: 1.1 }}>
                           {item.value}
                         </div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '0.35rem', lineHeight: 1.35 }}>{item.note}</div>
                       </div>
                     );
                   })}
@@ -1679,7 +1778,10 @@ export default function StockDetail({
                 <div style={{ background: 'rgba(0, 0, 0, 0.16)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '1rem' }}>
                     <div>
-                      <h4 style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-secondary)', margin: 0 }}>法人買賣壓力</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <h4 style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-secondary)', margin: 0 }}>法人買賣壓力</h4>
+                        {renderChipHelpButton('pressure')}
+                      </div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>以近 5 日三大法人淨買賣超估算方向</div>
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>
@@ -1688,8 +1790,11 @@ export default function StockDetail({
                   </div>
 
                   <div style={{ height: '28px', display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)' }}>
-                    <div style={{ width: `${chipDashboard.sellPressurePercent}%`, minWidth: chipDashboard.sellPressure > 0 ? '10px' : '0', background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.85), rgba(248, 113, 113, 0.65))' }} title={`賣壓 ${chipDashboard.sellPressure.toLocaleString()} 張`} />
-                    <div style={{ width: `${chipDashboard.buyPressurePercent}%`, minWidth: chipDashboard.buyPressure > 0 ? '10px' : '0', background: 'linear-gradient(90deg, rgba(34, 197, 94, 0.65), rgba(16, 185, 129, 0.9))' }} title={`買壓 ${chipDashboard.buyPressure.toLocaleString()} 張`} />
+                    <div style={{ width: `${chipDashboard.sellPressurePercent}%`, minWidth: chipDashboard.sellPressure > 0 ? '10px' : '0', background: 'linear-gradient(90deg, rgba(34, 197, 94, 0.55), rgba(16, 185, 129, 0.88))' }} title={`賣壓 ${chipDashboard.sellPressure.toLocaleString()} 張`} />
+                    <div style={{ width: `${chipDashboard.buyPressurePercent}%`, minWidth: chipDashboard.buyPressure > 0 ? '10px' : '0', background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.65), rgba(248, 113, 113, 0.95))' }} title={`買壓 ${chipDashboard.buyPressure.toLocaleString()} 張`} />
+                  </div>
+                  <div style={{ marginTop: '0.35rem', fontSize: '0.68rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+                    紅色買超、綠色賣超
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.65rem', marginTop: '0.85rem' }}>
@@ -1709,7 +1814,10 @@ export default function StockDetail({
                 <div style={{ background: 'rgba(0, 0, 0, 0.16)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', marginBottom: '0.75rem' }}>
                     <div>
-                      <h4 style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-secondary)', margin: 0 }}>股權結構分布</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <h4 style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-secondary)', margin: 0 }}>股權結構分布</h4>
+                        {renderChipHelpButton('ownership')}
+                      </div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>總股東人數 {chipData.shareholderBase.toLocaleString()} 人</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -1742,6 +1850,7 @@ export default function StockDetail({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.55rem' }}>
                       <ShieldCheck size={16} style={{ color: chipDashboard.quadrant.tone }} />
                       <h4 style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-secondary)', margin: 0 }}>股權分散診斷</h4>
+                      {renderChipHelpButton('dispersion')}
                     </div>
                     <div style={{ fontSize: '1.15rem', fontWeight: 900, color: chipDashboard.quadrant.tone, marginBottom: '0.45rem' }}>
                       {chipDashboard.quadrant.title}
@@ -1749,15 +1858,18 @@ export default function StockDetail({
                     <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
                       {chipDashboard.quadrant.copy}
                     </p>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.45rem', lineHeight: 1.45 }}>
+                      大戶合計比散戶 {chipDashboard.ownershipGap >= 0 ? '高' : '低'} {Math.abs(chipDashboard.ownershipGap)} 個百分點；散戶超過 35% 時仍視為籌碼偏分散。
+                    </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.72rem' }}>
-                    <div style={{ background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.14)', borderRadius: '6px', padding: '0.55rem' }}>
-                      <strong style={{ color: 'var(--stock-up)', display: 'block', marginBottom: '2px' }}>集中條件</strong>
+                    <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.14)', borderRadius: '6px', padding: '0.55rem' }}>
+                      <strong style={{ color: '#f87171', display: 'block', marginBottom: '2px' }}>集中條件</strong>
                       大戶高、散戶低
                     </div>
-                    <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.14)', borderRadius: '6px', padding: '0.55rem' }}>
-                      <strong style={{ color: 'var(--stock-down)', display: 'block', marginBottom: '2px' }}>分散警訊</strong>
+                    <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.14)', borderRadius: '6px', padding: '0.55rem' }}>
+                      <strong style={{ color: '#fbbf24', display: 'block', marginBottom: '2px' }}>分散警訊</strong>
                       散戶高、法人賣
                     </div>
                   </div>
@@ -1784,7 +1896,10 @@ export default function StockDetail({
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1rem' }}>
                   <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.045)', borderRadius: '8px', padding: '0.85rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.8rem' }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 850, color: 'var(--text-secondary)' }}>1000／400 張大戶與散戶持股比</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 850, color: 'var(--text-secondary)' }}>1000／400 張大戶與散戶持股比</div>
+                        {renderChipHelpButton('holdingTrend')}
+                      </div>
                       <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                         <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#f472b6', marginRight: 4 }} />1000 張</span>
                         <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#60a5fa', marginRight: 4 }} />400 張</span>
@@ -1809,7 +1924,10 @@ export default function StockDetail({
 
                   <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.045)', borderRadius: '8px', padding: '0.85rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.8rem' }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 850, color: 'var(--text-secondary)' }}>近月法人籌碼直條圖</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 850, color: 'var(--text-secondary)' }}>近月法人籌碼直條圖</div>
+                        {renderChipHelpButton('monthlyFlow')}
+                      </div>
                       <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap', fontSize: '0.68rem' }}>
                         <span style={{ color: '#ef4444', fontWeight: 800 }}>最大買超 +{Math.max(0, chipDashboard.largestMonthlyBuy).toLocaleString()}</span>
                         <span style={{ color: '#16a34a', fontWeight: 800 }}>最大賣超 {Math.min(0, chipDashboard.largestMonthlySell).toLocaleString()}</span>
@@ -2163,6 +2281,45 @@ export default function StockDetail({
         </div>
 
       </div>
+
+      {chipHelp && (
+        <div
+          onClick={() => setChipHelpKey(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 10020, background: 'rgba(2, 6, 23, 0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{ width: 'min(92vw, 460px)', background: 'var(--bg-secondary)', border: '1px solid rgba(56,189,248,0.24)', borderRadius: '12px', boxShadow: '0 22px 60px rgba(0,0,0,0.48)', padding: '1.25rem' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.9rem' }}>
+              <div style={{ display: 'flex', gap: '0.55rem', alignItems: 'center' }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.18)' }}>
+                  <HelpCircle size={16} style={{ color: 'var(--accent-blue)' }} />
+                </div>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 900, color: 'var(--text-primary)' }}>{chipHelp.title}</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChipHelpKey(null)}
+                style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', borderRadius: 8, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <p style={{ fontSize: '0.82rem', lineHeight: 1.65, color: 'var(--text-secondary)', margin: '0 0 0.85rem' }}>{chipHelp.body}</p>
+            <div style={{ display: 'grid', gap: '0.65rem' }}>
+              <div style={{ border: '1px solid rgba(239,68,68,0.16)', background: 'rgba(239,68,68,0.08)', borderRadius: 8, padding: '0.7rem' }}>
+                <strong style={{ display: 'block', color: '#f87171', fontSize: '0.76rem', marginBottom: '0.25rem' }}>偏多／較健康時</strong>
+                <div style={{ fontSize: '0.76rem', lineHeight: 1.55, color: 'var(--text-secondary)' }}>{chipHelp.good}</div>
+              </div>
+              <div style={{ border: '1px solid rgba(245,158,11,0.16)', background: 'rgba(245,158,11,0.07)', borderRadius: 8, padding: '0.7rem' }}>
+                <strong style={{ display: 'block', color: 'var(--accent-gold)', fontSize: '0.76rem', marginBottom: '0.25rem' }}>需要留意時</strong>
+                <div style={{ fontSize: '0.76rem', lineHeight: 1.55, color: 'var(--text-secondary)' }}>{chipHelp.watch}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
