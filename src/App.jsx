@@ -37,6 +37,8 @@ const DEFAULT_FILTERS = {
   maxPB: ''
 };
 
+const STOCK_DATA_CACHE_KEY = 'tw_stock_last_good_snapshot';
+
 const ChunkFallback = () => (
   <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem', color: 'var(--text-muted)', fontWeight: 700 }}>
     載入功能中...
@@ -274,6 +276,28 @@ export default function App() {
     window.setTimeout(() => fetchStocksData(false, true), 90000);
   };
 
+  const fetchStaticSnapshot = (bustStaticCache = false) => {
+    const staticUrl = bustStaticCache ? `./api/stocks.json?_=${Date.now()}` : './api/stocks.json';
+    return fetch(staticUrl, { cache: bustStaticCache ? 'no-store' : 'default' });
+  };
+
+  const readCachedSnapshot = () => {
+    try {
+      const cached = localStorage.getItem(STOCK_DATA_CACHE_KEY);
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeCachedSnapshot = (resData) => {
+    try {
+      localStorage.setItem(STOCK_DATA_CACHE_KEY, JSON.stringify(resData));
+    } catch {
+      // Best-effort fallback cache only.
+    }
+  };
+
   // 5. 獲取台股 API 數據
   const fetchStocksData = async (isRefresh = false, bustStaticCache = false) => {
     setLoading(true);
@@ -281,7 +305,7 @@ export default function App() {
     try {
       let response;
       let usedStaticSnapshot = false;
-      const shouldTryServerApi = !window.location.hostname.endsWith('github.io') && window.location.protocol !== 'file:';
+      const shouldTryServerApi = import.meta.env.DEV || window.location.port === '3001';
       
       try {
         // 先嘗試發送到 Express 後端伺服器 (若處於本機或 Full-stack 伺服器運行模式)
@@ -302,8 +326,7 @@ export default function App() {
         // 若在 GitHub Pages (Serverless) 等不支援後台運行的環境，則優雅降級讀取相對路徑下的靜態檔案
         usedStaticSnapshot = true;
         setCanUseLiveApi(false);
-        const staticUrl = bustStaticCache ? `./api/stocks.json?_=${Date.now()}` : './api/stocks.json';
-        response = await fetch(staticUrl, { cache: bustStaticCache ? 'no-store' : 'default' });
+        response = await fetchStaticSnapshot(bustStaticCache);
       }
 
       if (!response.ok) {
@@ -311,6 +334,7 @@ export default function App() {
       }
       const resData = await response.json();
       if (resData.success && Array.isArray(resData.data)) {
+        writeCachedSnapshot(resData);
         setStocks(resData.data);
         const isFallbackData = resData.isFallback || resData.source === 'static_fallback' || resData.source === 'empty_fallback';
         setIsOffline(isFallbackData);
