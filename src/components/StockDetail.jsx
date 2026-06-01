@@ -136,6 +136,7 @@ export default function StockDetail({
   onToggleWatchlist,
   onToggleCompare,
   onClose,
+  enableLiveData = false,
   activeStrategy
 }) {
   // 1. 查找目前選中的股票數據
@@ -150,7 +151,11 @@ export default function StockDetail({
 
   // 1.3. 實時價格輪詢 useEffect (每 15 秒同步一次)
   useEffect(() => {
-    if (!stockCode) return;
+    if (!stockCode || !enableLiveData) {
+      setLiveStockData(null);
+      setIsLiveLoading(false);
+      return;
+    }
     
     // 重設上一檔股票殘留的實時資料
     setLiveStockData(null);
@@ -177,7 +182,7 @@ export default function StockDetail({
     }, 15000);
 
     return () => clearInterval(timer);
-  }, [stockCode]);
+  }, [stockCode, enableLiveData]);
 
   // 如果找不到股票，則不渲染
   if (!stock) return null;

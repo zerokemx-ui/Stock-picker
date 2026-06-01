@@ -25,7 +25,8 @@ export default function StockTable({
   setSortConfig,
   currentPage,
   setCurrentPage,
-  onOpenDetail
+  onOpenDetail,
+  enableLiveData = false
 }) {
   const ITEMS_PER_PAGE = 15;
 
@@ -52,6 +53,11 @@ export default function StockTable({
   }, [paginatedStocks]);
 
   useEffect(() => {
+    if (!enableLiveData) {
+      setLivePrices({});
+      return;
+    }
+
     if (!visibleCodesString) return;
     
     let isMounted = true;
@@ -85,7 +91,7 @@ export default function StockTable({
       isMounted = false;
       clearInterval(timer);
     };
-  }, [visibleCodesString]);
+  }, [visibleCodesString, enableLiveData]);
 
   // 4. 處理排序
   const handleSort = (key) => {

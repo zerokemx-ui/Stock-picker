@@ -42,6 +42,7 @@ export default function Portfolio({
   onSelectStock,
   portfolio = [],
   portfolioLivePrices = {},
+  enableLiveData = false,
   onRemoveFromPortfolio,
   onUpdatePortfolioLots
 }) {
@@ -246,7 +247,7 @@ export default function Portfolio({
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 💼 我的模擬投資組合 (Virtual Portfolio Dashboard)
-                {portfolio.length > 0 && (
+                {enableLiveData && portfolio.length > 0 && (
                   <span className="live-badge" style={{ fontSize: '0.68rem', padding: '0.15rem 0.4rem', background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.25)', color: '#22c55e', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, letterSpacing: '0.5px' }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block', animation: 'live-pulse 1.6s infinite' }}></span>
                     即時行情同步 (Live)

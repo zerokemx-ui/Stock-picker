@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react';
 import { 
   Activity, 
   Coins, 
@@ -14,15 +14,16 @@ import {
   Briefcase,
   CalendarDays
 } from 'lucide-react';
-import Dashboard from './components/Dashboard';
-import StockFilter from './components/StockFilter';
-import StockTable from './components/StockTable';
-import StockCompare from './components/StockCompare';
-import Watchlist from './components/Watchlist';
-import StockDetail from './components/StockDetail';
-import SOPRadar from './components/SOPRadar';
-import Portfolio from './components/Portfolio';
 import { PRESET_STRATEGIES } from './utils/stockUtils';
+
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const StockFilter = lazy(() => import('./components/StockFilter'));
+const StockTable = lazy(() => import('./components/StockTable'));
+const StockCompare = lazy(() => import('./components/StockCompare'));
+const Watchlist = lazy(() => import('./components/Watchlist'));
+const StockDetail = lazy(() => import('./components/StockDetail'));
+const SOPRadar = lazy(() => import('./components/SOPRadar'));
+const Portfolio = lazy(() => import('./components/Portfolio'));
 
 const DEFAULT_FILTERS = {
   search: '',
@@ -35,6 +36,12 @@ const DEFAULT_FILTERS = {
   minPB: '',
   maxPB: ''
 };
+
+const ChunkFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+    載入功能中...
+  </div>
+);
 
 export default function App() {
   // 1. 全域股票數據狀態
@@ -49,6 +56,7 @@ export default function App() {
     generatedAt: '',
     isFallback: false
   });
+  const [canUseLiveApi, setCanUseLiveApi] = useState(false);
 
   // 2. 使用者自訂狀態 (自選股與對比)
   const [watchlist, setWatchlist] = useState(() => {
@@ -263,19 +271,24 @@ export default function App() {
   };
 
   const queueStaticDataReload = () => {
-    window.setTimeout(() => fetchStocksData(false), 90000);
+    window.setTimeout(() => fetchStocksData(false, true), 90000);
   };
 
   // 5. 獲取台股 API 數據
-  const fetchStocksData = async (isRefresh = false) => {
+  const fetchStocksData = async (isRefresh = false, bustStaticCache = false) => {
     setLoading(true);
     setError(null);
     try {
       let response;
       let usedStaticSnapshot = false;
+      const shouldTryServerApi = !window.location.hostname.endsWith('github.io') && window.location.protocol !== 'file:';
       
       try {
         // 先嘗試發送到 Express 後端伺服器 (若處於本機或 Full-stack 伺服器運行模式)
+        if (!shouldTryServerApi) {
+          throw new Error('Static hosting environment');
+        }
+
         if (isRefresh) {
           response = await fetch('/api/stocks/refresh', { method: 'POST' });
         } else {
@@ -284,10 +297,13 @@ export default function App() {
         if (!response.ok) {
           throw new Error('Express endpoint returned non-OK status');
         }
+        setCanUseLiveApi(true);
       } catch {
         // 若在 GitHub Pages (Serverless) 等不支援後台運行的環境，則優雅降級讀取相對路徑下的靜態檔案
         usedStaticSnapshot = true;
-        response = await fetch(`./api/stocks.json?_=${Date.now()}`, { cache: 'no-store' });
+        setCanUseLiveApi(false);
+        const staticUrl = bustStaticCache ? `./api/stocks.json?_=${Date.now()}` : './api/stocks.json';
+        response = await fetch(staticUrl, { cache: bustStaticCache ? 'no-store' : 'default' });
       }
 
       if (!response.ok) {
@@ -404,6 +420,11 @@ export default function App() {
 
   const portfolioCodesString = portfolio.map(p => p.code).join(',');
   useEffect(() => {
+    if (!canUseLiveApi) {
+      setPortfolioLivePrices({});
+      return;
+    }
+
     fetchPortfolioLivePrices();
     
     const timer = setInterval(() => {
@@ -411,7 +432,7 @@ export default function App() {
     }, 15000);
     
     return () => clearInterval(timer);
-  }, [portfolioCodesString]);
+  }, [portfolioCodesString, canUseLiveApi]);
 
   // 6. 各種互動 Handlers
   const handleToggleWatchlist = (code) => {
@@ -756,6 +777,7 @@ export default function App() {
       ) : (
         !error && (
           <div style={{ transition: 'opacity 0.2s ease' }}>
+            <Suspense fallback={<ChunkFallback />}>
             
             {/* Tab 1: 市場總覽儀表板 */}
             {activeTab === 'dashboard' && (
@@ -805,6 +827,7 @@ export default function App() {
                   currentPage={currentPage}
                   setCurrentPage={setCurrentPage}
                   onOpenDetail={handleSelectStock}
+                  enableLiveData={canUseLiveApi}
                 />
               </>
             )}
@@ -835,24 +858,28 @@ export default function App() {
                 onSelectStock={handleSelectStock} 
                 portfolio={portfolio}
                 portfolioLivePrices={portfolioLivePrices}
+                enableLiveData={canUseLiveApi}
                 onRemoveFromPortfolio={handleRemoveFromPortfolio}
                 onUpdatePortfolioLots={handleUpdatePortfolioLots}
               />
             )}
 
+            </Suspense>
           </div>
         )
       )}
 
       {/* 側邊自選股追蹤側拉抽屜 */}
-      <Watchlist 
-        stocks={stocks}
-        watchlist={watchlist}
-        onRemoveWatchlist={handleToggleWatchlist}
-        isOpen={isWatchlistOpen}
-        onClose={() => setIsWatchlistOpen(false)}
-        onSelectStock={handleSelectStock}
-      />
+      <Suspense fallback={null}>
+        <Watchlist 
+          stocks={stocks}
+          watchlist={watchlist}
+          onRemoveWatchlist={handleToggleWatchlist}
+          isOpen={isWatchlistOpen}
+          onClose={() => setIsWatchlistOpen(false)}
+          onSelectStock={handleSelectStock}
+        />
+      </Suspense>
 
       {/* 抽屜開啟時的半透明背景遮罩 */}
       {isWatchlistOpen && (
@@ -864,18 +891,21 @@ export default function App() {
 
       {/* 個股詳細分析彈窗面板 */}
       {selectedStockCode && (
-        <StockDetail 
-          stockCode={selectedStockCode}
-          stocks={stocks}
-          watchlist={watchlist}
-          compareList={compareList}
-          portfolio={portfolio}
-          activeStrategy={activeStrategy}
-          onAddToPortfolio={handleAddToPortfolio}
-          onToggleWatchlist={handleToggleWatchlist}
-          onToggleCompare={handleToggleCompare}
-          onClose={() => setSelectedStockCode(null)}
-        />
+        <Suspense fallback={<ChunkFallback />}>
+          <StockDetail 
+            stockCode={selectedStockCode}
+            stocks={stocks}
+            watchlist={watchlist}
+            compareList={compareList}
+            portfolio={portfolio}
+            activeStrategy={activeStrategy}
+            enableLiveData={canUseLiveApi}
+            onAddToPortfolio={handleAddToPortfolio}
+            onToggleWatchlist={handleToggleWatchlist}
+            onToggleCompare={handleToggleCompare}
+            onClose={() => setSelectedStockCode(null)}
+          />
+        </Suspense>
       )}
 
       {/* 雲端更新設定彈窗 */}
