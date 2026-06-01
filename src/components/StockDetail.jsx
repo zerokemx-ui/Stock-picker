@@ -78,10 +78,10 @@ const chipHelpContent = {
     watch: '不是只看它有沒有高於散戶，而是看是否足夠集中。低於約 60%-65% 時，代表大戶掌握度不算強。'
   },
   retailPressure: {
-    title: '散戶持股壓力',
-    body: '這是 10 張以下小股東的持股比重。散戶比重越高，代表籌碼越分散，價格轉弱時比較容易出現恐慌賣壓或追高套牢。',
-    good: '散戶占比偏低通常較健康，代表股權比較集中。',
-    watch: '超過約 35% 就要提高警覺；40% 以上通常視為散戶偏高，不一定立刻不好，但籌碼穩定度較弱。'
+    title: '400 張以下中小股東',
+    body: '這是 TDCC 股權分散表中 400 張以下持股級距的合計比重。它不是 10 張以下，而是市場常見用來觀察中小股東籌碼壓力的口徑。',
+    good: '400 張以下占比越低，通常代表籌碼越集中在大戶。',
+    watch: '超過約 35%-40% 才需要提高警覺；若 400 張以上大戶已超過 70%，通常不應判成散戶偏高。'
   },
   institutional3d: {
     title: '近 3 日法人',
@@ -103,21 +103,21 @@ const chipHelpContent = {
   },
   ownership: {
     title: '股權結構分布',
-    body: '這條長條圖把不同持股級距攤開：千張以上、400-1000 張、10-400 張、10 張以下散戶。它用來看籌碼是集中在大戶，還是分散在中小股東。',
+    body: '這條長條圖把 TDCC 持股級距攤開：1000 張以上、400-1000 張、400 張以下中小股東。它用來看籌碼是集中在大戶，還是分散在中小股東。',
     good: '大戶區塊越大、散戶區塊越小，通常籌碼越集中。',
     watch: '即使大戶合計略高於散戶，只要散戶占比接近或超過 40%，仍代表市場浮動籌碼偏多。'
   },
   dispersion: {
     title: '股權分散診斷',
-    body: '這是用大戶持股合計與散戶持股壓力做出的結構判讀。它不是比較誰比較多，而是看籌碼是否足夠集中、散戶占比是否偏高。',
+    body: '這是用 400 張以上大戶合計與 400 張以下中小股東合計做出的結構判讀。它不是猜測資料，而是直接使用 TDCC 官方級距。',
     good: '強集中：大戶高、散戶低，籌碼較穩。',
     watch: '散戶偏高：大戶掌握度不足或散戶占比過高，價格轉弱時容易有較多籌碼壓力。'
   },
   holdingTrend: {
-    title: '1000／400 張大戶與散戶持股比',
-    body: '這張圖看近幾週不同持股級距的變化。粉色是千張以上，藍色是 400 張以上合計，綠色是散戶。',
-    good: '大戶線往上、散戶往下，通常代表籌碼集中改善。',
-    watch: '大戶下降、散戶上升，代表籌碼往小股東分散，後續波動可能變大。'
+    title: '1000／400 張持股比',
+    body: '這張圖目前顯示最新 TDCC 官方截面資料。粉色是 1000 張以上，藍色是 400 張以上合計，綠色是 400 張以下中小股東。',
+    good: '400 張以上越高、400 張以下越低，通常代表籌碼集中度較佳。',
+    watch: '若未建立歷史快照，就不做近幾週趨勢推估，避免產生看似真實但沒有來源的線圖。'
   },
   monthlyFlow: {
     title: '近月法人籌碼直條圖',
@@ -137,7 +137,8 @@ export default function StockDetail({
   onToggleCompare,
   onClose,
   enableLiveData = false,
-  activeStrategy
+  activeStrategy,
+  officialChipData = {}
 }) {
   // 1. 查找目前選中的股票數據
   const stock = useMemo(() => {
@@ -223,8 +224,8 @@ export default function StockDetail({
   }, [stock, dcaAmount, dcaYears]);
 
   const chipData = useMemo(() => {
-    return generateChipData(stock);
-  }, [stock]);
+    return generateChipData(stock, officialChipData[stock.Code]);
+  }, [stock, officialChipData]);
 
   const fundamentalsData = useMemo(() => {
     return generateFundamentals(stock);
@@ -242,67 +243,34 @@ export default function StockDetail({
     const buyPressure = dailyTrades.reduce((sum, day) => sum + Math.max(day.netTotal || 0, 0), 0);
     const sellPressure = Math.abs(dailyTrades.reduce((sum, day) => sum + Math.min(day.netTotal || 0, 0), 0));
     const pressureTotal = Math.max(buyPressure + sellPressure, 1);
-    const buyPressurePercent = Math.round((buyPressure / pressureTotal) * 100);
-    const sellPressurePercent = 100 - buyPressurePercent;
+    const buyPressurePercent = dailyTrades.length ? Math.round((buyPressure / pressureTotal) * 100) : 0;
+    const sellPressurePercent = dailyTrades.length ? 100 - buyPressurePercent : 0;
     const largeHolderPercent = chipData.cumulativeLargePercent || 0;
     const retailPercent = chipData.retailPercent || 0;
     const isLargeHolderStrong = largeHolderPercent >= 65;
     const isLargeHolderWeak = largeHolderPercent < 45;
     const isNetBuying = net3Days > 2000;
     const isNetSelling = net3Days < -2000;
-    const trendRandom = createSeededRandom(`${stock.Code || '2330'}-chip-trend`);
-    const clampPercent = (value) => parseFloat(Math.max(5, Math.min(92, value)).toFixed(2));
-    const weekLabels = Array.from({ length: 16 }, (_, idx) => `W${idx + 1}`);
-    let superLargeTrendBase = Math.max(8, chipData.superLargePercent - (trendRandom() * 5 - 1.5));
-    let largeTrendBase = Math.max(3, chipData.largePercent - (trendRandom() * 2 - 0.6));
-    let retailTrendBase = Math.max(6, chipData.retailPercent + (trendRandom() * 5 - 2));
-    let institutionalBalance = net5Days * 0.18;
+    const holdingTrend = [{
+      label: chipData.dataDate || 'latest',
+      superLarge: chipData.superLargePercent || 0,
+      large: chipData.largePercent || 0,
+      largeCombined: chipData.cumulativeLargePercent || 0,
+      retail: chipData.retailPercent || 0
+    }];
 
-    const holdingTrend = weekLabels.map((label, idx) => {
-      const direction = (idx - 8) * 0.12;
-      const pulse = (trendRandom() - 0.5) * 1.15;
-      superLargeTrendBase = clampPercent(superLargeTrendBase + direction + pulse);
-      largeTrendBase = clampPercent(largeTrendBase + (trendRandom() - 0.45) * 0.55);
-      retailTrendBase = clampPercent(retailTrendBase - direction * 0.9 + (trendRandom() - 0.5) * 1.05);
-
-      if (idx === weekLabels.length - 1) {
-        superLargeTrendBase = chipData.superLargePercent;
-        largeTrendBase = chipData.largePercent;
-        retailTrendBase = chipData.retailPercent;
-      }
-
-      return {
-        label,
-        superLarge: superLargeTrendBase,
-        large: largeTrendBase,
-        largeCombined: clampPercent(superLargeTrendBase + largeTrendBase),
-        retail: retailTrendBase
-      };
-    });
-
-    const monthlyFlow = ['近 4 月', '近 3 月', '近 2 月', '近 1 月', '本月'].map((label, idx) => {
-      const volatility = isLargeHolderStrong ? 2.8 : 1.2;
-      const bias = net5Days / (isLargeHolderStrong ? 12 : 5);
-      institutionalBalance += (trendRandom() - 0.48) * 4800 * volatility + bias;
-      if (idx === 4) institutionalBalance = net5Days;
-
-      const foreign = Math.round(institutionalBalance * (0.62 + trendRandom() * 0.18));
-      const trust = Math.round(institutionalBalance * (0.18 + trendRandom() * 0.12));
-      const dealer = Math.round(institutionalBalance - foreign - trust);
-
-      return {
-        label,
-        foreign,
-        trust,
-        dealer,
-        netTotal: foreign + trust + dealer
-      };
-    });
+    const monthlyFlow = dailyTrades.map((item) => ({
+      label: item.date || item.day || 'trading day',
+      foreign: item.foreign || 0,
+      trust: item.trust || 0,
+      dealer: item.dealer || 0,
+      netTotal: item.netTotal || 0
+    }));
     const maxHoldingValue = Math.max(...holdingTrend.flatMap((item) => [item.superLarge, item.largeCombined, item.retail]), 1);
     const maxMonthlyAbs = Math.max(...monthlyFlow.map((item) => Math.abs(item.netTotal)), 1);
     const latestHolding = holdingTrend[holdingTrend.length - 1];
-    const largestMonthlyBuy = Math.max(...monthlyFlow.map((item) => item.netTotal));
-    const largestMonthlySell = Math.min(...monthlyFlow.map((item) => item.netTotal));
+    const largestMonthlyBuy = monthlyFlow.length ? Math.max(...monthlyFlow.map((item) => item.netTotal)) : 0;
+    const largestMonthlySell = monthlyFlow.length ? Math.min(...monthlyFlow.map((item) => item.netTotal)) : 0;
 
     let verdict = '籌碼拉鋸';
     let verdictTone = 'var(--accent-blue)';
@@ -336,30 +304,35 @@ export default function StockDetail({
       verdictCopy = '近 3 日法人偏賣，短線籌碼轉弱，先確認賣壓是否收斂。';
     }
 
-    const quadrant = isLargeHolderStrong && retailPercent < 25
+    const quadrant = largeHolderPercent >= 70 && retailPercent <= 30
       ? {
-          title: '強集中',
+          title: '大戶高度集中',
           tone: 'var(--stock-up)',
-          copy: '大戶持股占優、散戶比重低，籌碼結構相對乾淨。'
+          copy: '400 張以上大戶持股達 70% 以上，400 張以下中小股東低於 30%，籌碼集中度佳。'
         }
-      : isLargeHolderStrong && retailPercent >= 25
+      : largeHolderPercent >= 60 && retailPercent < 35
         ? {
-            title: '大戶強、散戶也追',
-            tone: 'var(--accent-gold)',
-            copy: '大戶仍有掌握度，但散戶參與提高，追價波動可能放大。'
+            title: '大戶持股偏高',
+            tone: 'var(--accent-blue)',
+            copy: '400 張以上大戶仍具掌握度，中小股東比例未達偏高警戒。'
           }
-        : !isLargeHolderStrong && retailPercent >= 35
+        : largeHolderPercent >= 65 && retailPercent >= 35
           ? {
-              title: '散戶偏高',
-              tone: '#fbbf24',
-              copy: '散戶占比偏高，代表籌碼較分散；即使大戶合計略高於散戶，掌握度仍不算強。'
+              title: '大戶強，中小股東也高',
+              tone: 'var(--accent-gold)',
+              copy: '大戶持股仍高，但 400 張以下中小股東也偏多，波動可能較大。'
             }
-          : {
-              title: '中性換手',
-              tone: 'var(--accent-blue)',
-              copy: '股權結構未明顯偏向集中或分散，等待法人方向確認。'
-            };
-
+          : retailPercent >= 40
+            ? {
+                title: '中小股東偏高',
+                tone: '#fbbf24',
+                copy: '400 張以下中小股東占比偏高，籌碼較分散，需搭配法人與量價確認。'
+              }
+            : {
+                title: '籌碼中性',
+                tone: 'var(--accent-blue)',
+                copy: '股權結構未明顯偏向集中或分散，等待法人方向確認。'
+              };
     return {
       verdict,
       verdictTone,
@@ -385,10 +358,9 @@ export default function StockDetail({
       largestMonthlyBuy,
       largestMonthlySell,
       structureRows: [
-        { label: '千張以上大戶', value: chipData.superLargePercent, color: '#ec4899' },
+        { label: '1000 張以上大戶', value: chipData.superLargePercent, color: '#ec4899' },
         { label: '400-1000 張', value: chipData.largePercent, color: '#a855f7' },
-        { label: '10-400 張', value: chipData.mediumPercent, color: '#38bdf8' },
-        { label: '10 張以下散戶', value: chipData.retailPercent, color: '#10b981' }
+        { label: '400 張以下中小股東', value: chipData.retailPercent, color: '#10b981' }
       ],
       signalRows: [
         { label: '近 3 日法人', value: net3Days, unit: '張', tone: net3Days >= 0 ? 'up-text' : 'down-text' },
@@ -1757,7 +1729,7 @@ export default function StockDetail({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   {[
                     { label: '大戶持股合計', value: `${chipDashboard.largeHolderPercent}%`, icon: ShieldCheck, tone: chipDashboard.largeHolderPercent >= 65 ? 'var(--stock-up)' : 'var(--accent-blue)', helpKey: 'largeHolder', note: chipDashboard.largeHolderPercent >= 65 ? '集中度較佳' : '集中度未達強勢' },
-                    { label: '散戶持股壓力', value: `${chipDashboard.retailPercent}%`, icon: AlertCircle, tone: chipDashboard.retailPercent >= 35 ? '#fbbf24' : 'var(--accent-blue)', helpKey: 'retailPressure', note: chipDashboard.retailPercent >= 35 ? '偏高，需留意' : '壓力較低' },
+                    { label: '400 張以下中小股東', value: `${chipDashboard.retailPercent}%`, icon: AlertCircle, tone: chipDashboard.retailPercent >= 40 ? '#fbbf24' : 'var(--accent-blue)', helpKey: 'retailPressure', note: chipDashboard.retailPercent >= 40 ? '偏高，需留意' : '比例正常' },
                     { label: '近 3 日法人', value: `${chipDashboard.net3Days >= 0 ? '+' : ''}${chipDashboard.net3Days.toLocaleString()} 張`, icon: chipDashboard.net3Days >= 0 ? TrendingUp : TrendingDown, tone: chipDashboard.net3Days >= 0 ? 'var(--stock-up)' : 'var(--stock-down)', helpKey: 'institutional3d', note: chipDashboard.net3Days >= 0 ? '短線買超' : '短線賣超' },
                     { label: '近 5 日法人', value: `${chipDashboard.net5Days >= 0 ? '+' : ''}${chipDashboard.net5Days.toLocaleString()} 張`, icon: chipDashboard.net5Days >= 0 ? TrendingUp : TrendingDown, tone: chipDashboard.net5Days >= 0 ? 'var(--stock-up)' : 'var(--stock-down)', helpKey: 'institutional5d', note: chipDashboard.net5Days >= 0 ? '買盤延續' : '賣壓延續' }
                   ].map((item) => {
@@ -1864,7 +1836,7 @@ export default function StockDetail({
                       {chipDashboard.quadrant.copy}
                     </p>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.45rem', lineHeight: 1.45 }}>
-                      大戶合計比散戶 {chipDashboard.ownershipGap >= 0 ? '高' : '低'} {Math.abs(chipDashboard.ownershipGap)} 個百分點；散戶超過 35% 時仍視為籌碼偏分散。
+                      400 張以上大戶比 400 張以下中小股東 {chipDashboard.ownershipGap >= 0 ? '高' : '低'} {Math.abs(chipDashboard.ownershipGap)} 個百分點；中小股東超過 40% 才視為偏分散。
                     </div>
                   </div>
 
@@ -1894,7 +1866,7 @@ export default function StockDetail({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.72rem' }}>
                     <span style={{ color: '#f472b6', fontWeight: 800 }}>千張以上 {chipDashboard.latestHolding.superLarge}%</span>
                     <span style={{ color: '#60a5fa', fontWeight: 800 }}>400 張以上 {chipDashboard.latestHolding.largeCombined}%</span>
-                    <span style={{ color: '#34d399', fontWeight: 800 }}>散戶 {chipDashboard.latestHolding.retail}%</span>
+                    <span style={{ color: '#34d399', fontWeight: 800 }}>400 張以下 {chipDashboard.latestHolding.retail}%</span>
                   </div>
                 </div>
 
@@ -1902,13 +1874,13 @@ export default function StockDetail({
                   <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.045)', borderRadius: '8px', padding: '0.85rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.8rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 850, color: 'var(--text-secondary)' }}>1000／400 張大戶與散戶持股比</div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 850, color: 'var(--text-secondary)' }}>1000／400 張官方持股比</div>
                         {renderChipHelpButton('holdingTrend')}
                       </div>
                       <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                         <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#f472b6', marginRight: 4 }} />1000 張</span>
                         <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#60a5fa', marginRight: 4 }} />400 張</span>
-                        <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#34d399', marginRight: 4 }} />散戶</span>
+                        <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#34d399', marginRight: 4 }} />400 張以下</span>
                       </div>
                     </div>
                     <div style={{ height: 178, display: 'flex', alignItems: 'flex-end', gap: '0.42rem', padding: '0.4rem 0.1rem 0.15rem', borderBottom: '1px solid rgba(255,255,255,0.12)', background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0, transparent 1px) 0 0 / 100% 44px' }}>
@@ -1917,7 +1889,7 @@ export default function StockDetail({
                           <div style={{ flex: 1, width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '2px' }}>
                             <div title={`${item.label} 千張以上 ${item.superLarge}%`} style={{ width: '26%', minWidth: 3, height: `${Math.max(4, (item.superLarge / chipDashboard.maxHoldingValue) * 100)}%`, borderRadius: '4px 4px 1px 1px', background: 'linear-gradient(180deg, #f472b6, rgba(244, 114, 182, 0.35))' }} />
                             <div title={`${item.label} 400 張以上 ${item.largeCombined}%`} style={{ width: '26%', minWidth: 3, height: `${Math.max(4, (item.largeCombined / chipDashboard.maxHoldingValue) * 100)}%`, borderRadius: '4px 4px 1px 1px', background: 'linear-gradient(180deg, #60a5fa, rgba(96, 165, 250, 0.34))' }} />
-                            <div title={`${item.label} 散戶 ${item.retail}%`} style={{ width: '26%', minWidth: 3, height: `${Math.max(4, (item.retail / chipDashboard.maxHoldingValue) * 100)}%`, borderRadius: '4px 4px 1px 1px', background: 'linear-gradient(180deg, #34d399, rgba(52, 211, 153, 0.32))' }} />
+                            <div title={`${item.label} 400 張以下 ${item.retail}%`} style={{ width: '26%', minWidth: 3, height: `${Math.max(4, (item.retail / chipDashboard.maxHoldingValue) * 100)}%`, borderRadius: '4px 4px 1px 1px', background: 'linear-gradient(180deg, #34d399, rgba(52, 211, 153, 0.32))' }} />
                           </div>
                           {(idx === 0 || idx === chipDashboard.holdingTrend.length - 1 || idx % 5 === 0) && (
                             <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontFamily: 'Outfit' }}>{item.label}</span>
@@ -1965,7 +1937,7 @@ export default function StockDetail({
                     判讀依據
                   </strong>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: 0 }}>
-                    {chipData.diagnostic} 目前大戶合計 {chipDashboard.largeHolderPercent}%、散戶 {chipDashboard.retailPercent}%；近 3 日法人淨買賣超 {chipDashboard.net3Days >= 0 ? '+' : ''}{chipDashboard.net3Days.toLocaleString()} 張。
+                    {chipData.diagnostic} 目前 400 張以上大戶合計 {chipDashboard.largeHolderPercent}%、400 張以下中小股東 {chipDashboard.retailPercent}%；近 3 日法人淨買賣超 {chipDashboard.net3Days >= 0 ? '+' : ''}{chipDashboard.net3Days.toLocaleString()} 張。
                   </p>
                 </div>
               </div>

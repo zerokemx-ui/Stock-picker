@@ -59,6 +59,7 @@ export default function App() {
     isFallback: false
   });
   const [canUseLiveApi, setCanUseLiveApi] = useState(false);
+  const [officialChipData, setOfficialChipData] = useState({});
 
   // 2. 使用者自訂狀態 (自選股與對比)
   const [watchlist, setWatchlist] = useState(() => {
@@ -336,6 +337,16 @@ export default function App() {
       if (resData.success && Array.isArray(resData.data)) {
         writeCachedSnapshot(resData);
         setStocks(resData.data);
+        try {
+          const chipResponse = await fetch(`./api/chip.json?_=${Date.now()}`, { cache: 'no-store' });
+          if (chipResponse.ok) {
+            const chipPayload = await chipResponse.json();
+            setOfficialChipData(chipPayload && chipPayload.data ? chipPayload.data : {});
+          }
+        } catch (chipError) {
+          console.warn('Official chip data is unavailable:', chipError);
+          setOfficialChipData({});
+        }
         const isFallbackData = resData.isFallback || resData.source === 'static_fallback' || resData.source === 'empty_fallback';
         setIsOffline(isFallbackData);
         setDataStatus({
@@ -924,6 +935,7 @@ export default function App() {
             portfolio={portfolio}
             activeStrategy={activeStrategy}
             enableLiveData={canUseLiveApi}
+            officialChipData={officialChipData}
             onAddToPortfolio={handleAddToPortfolio}
             onToggleWatchlist={handleToggleWatchlist}
             onToggleCompare={handleToggleCompare}
