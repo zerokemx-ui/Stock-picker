@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "tdcc_shareholding_twse_t86",
-  "generatedAt": "2026-06-24T15:18:09.094Z",
+  "generatedAt": "2026-06-24T15:30:57.040Z",
   "shareholding": {
     "source": "TDCC 集保股權分散表",
     "url": "https://opendata.tdcc.com.tw/getOD.ashx?id=1-5",
@@ -10042,9 +10042,9 @@
         {
           "date": "2026-06-24",
           "foreign": 7741,
-          "trust": -5605,
-          "dealer": -86,
-          "netTotal": 2051
+          "trust": 105,
+          "dealer": -98,
+          "netTotal": 0
         }
       ]
     },
@@ -26909,9 +26909,9 @@
         {
           "date": "2026-06-24",
           "foreign": 212,
-          "trust": 0,
-          "dealer": -46,
-          "netTotal": 167
+          "trust": 16,
+          "dealer": -13,
+          "netTotal": 0
         }
       ]
     },
@@ -39764,9 +39764,9 @@
         {
           "date": "2026-06-24",
           "foreign": 1181,
-          "trust": 539,
-          "dealer": 62,
-          "netTotal": 1782
+          "trust": 9,
+          "dealer": 38,
+          "netTotal": 0
         }
       ]
     },
@@ -55186,7 +55186,7 @@
           "foreign": 2,
           "trust": 0,
           "dealer": 0,
-          "netTotal": 2
+          "netTotal": 0
         }
       ]
     },
@@ -59862,9 +59862,9 @@
         {
           "date": "2026-06-24",
           "foreign": 924,
-          "trust": 0,
+          "trust": 14,
           "dealer": -13,
-          "netTotal": 911
+          "netTotal": 0
         }
       ]
     },
@@ -60542,9 +60542,9 @@
         {
           "date": "2026-06-24",
           "foreign": 2,
-          "trust": 0,
+          "trust": 1,
           "dealer": -1,
-          "netTotal": 1
+          "netTotal": 0
         }
       ]
     },
@@ -64437,9 +64437,9 @@
         {
           "date": "2026-06-24",
           "foreign": 84,
-          "trust": 0,
+          "trust": 1,
           "dealer": 0,
-          "netTotal": 84
+          "netTotal": 0
         }
       ]
     },
