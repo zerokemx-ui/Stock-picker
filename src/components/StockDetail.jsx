@@ -36,7 +36,8 @@ import {
   safeFloat,
   runDCABacktest,
   generateChipData,
-  generateFundamentals
+  generateFundamentals,
+  normalizeBars
 } from '../utils/stockUtils';
 
 // 註冊 Chart.js 核心與折線圖填滿元件
@@ -138,7 +139,9 @@ export default function StockDetail({
   onClose,
   enableLiveData = false,
   activeStrategy,
-  officialChipData = {}
+  officialChipData = {},
+  historyData = {},
+  fundamentalsMap = {}
 }) {
   // 1. 查找目前選中的股票數據
   const stock = useMemo(() => {
@@ -220,16 +223,16 @@ export default function StockDetail({
   }, [stockCode]);
 
   const dcaResults = useMemo(() => {
-    return runDCABacktest(stock, dcaAmount, dcaYears);
-  }, [stock, dcaAmount, dcaYears]);
+    return runDCABacktest(stock, dcaAmount, dcaYears, historyData[stock.Code]);
+  }, [stock, dcaAmount, dcaYears, historyData]);
 
   const chipData = useMemo(() => {
     return generateChipData(stock, officialChipData[stock.Code]);
   }, [stock, officialChipData]);
 
   const fundamentalsData = useMemo(() => {
-    return generateFundamentals(stock);
-  }, [stock]);
+    return generateFundamentals(stock, fundamentalsMap[stock.Code]);
+  }, [stock, fundamentalsMap]);
 
   const chipDashboard = useMemo(() => {
     if (!chipData) return null;
@@ -429,10 +432,10 @@ export default function StockDetail({
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(14, 19, 38, 0.95)',
+        backgroundColor: 'var(--panel-strong)',
         titleColor: '#f8fafc',
         bodyColor: '#cbd5e1',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'var(--surface-3)',
         borderWidth: 1,
         padding: 10,
         callbacks: {
@@ -455,7 +458,7 @@ export default function StockDetail({
         }
       },
       y: {
-        grid: { color: 'rgba(255, 255, 255, 0.03)' },
+        grid: { color: 'var(--surface-2)' },
         ticks: { 
           color: '#cbd5e1', 
           font: { 
@@ -808,76 +811,30 @@ export default function StockDetail({
     return { pros, cons };
   }, [stock, changeVal, fundamentalsData, activeStrategy]);
 
-  // 6. 生成 30 日歷史模擬走勢
+  // 6. 由真實日線歷史 (history.json) 繪製近 30 日走勢
   const chartData = useMemo(() => {
-    const rand = createSeededRandom(stock.Code);
-    const ohlcData = [];
-    
-    let tempPrice = closingPrice;
-    // 基於今日漲跌幅計算波動度
-    const volatility = Math.max(0.012, Math.min(0.05, Math.abs(changeVal) / closingPrice || 0.02));
-    
-    // 生成 30 個交易日的日期
-    const today = new Date();
-    let businessDaysCount = 0;
-    let dayOffset = 0;
-    
-    const dates = [];
-    while (businessDaysCount < 30) {
-      const pastDate = new Date(today);
-      pastDate.setDate(today.getDate() - dayOffset);
-      const dayOfWeek = pastDate.getDay();
-      
-      // 排除週末
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        const mm = String(pastDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(pastDate.getDate()).padStart(2, '0');
-        dates.unshift(`${mm}/${dd}`);
-        businessDaysCount++;
-      }
-      dayOffset++;
-    }
+    const bars = normalizeBars(historyData[stock.Code]);
+    const recent = bars.slice(-30);
 
-    // 基於今日即時/靜態成交量取得一個基準日成交量 (以張為單位，維持與當日相同的張數級別)
-    const currentVolShares = liveStockData ? parseFloat(liveStockData.TradeVolume) * 1000 : (parseInt(stock.TradeVolume) || 5000000);
-    const baseVolume = currentVolShares / 1000; // 每日基準成交張數
+    const ohlcData = recent.map((b) => ({
+      open: b.open,
+      high: b.high,
+      low: b.low,
+      close: b.close,
+      volume: Math.round((b.volume || 0) / 1000), // 顯示為張
+      isUp: b.close >= b.open
+    }));
 
-    // 反向隨機漫步回推 30 天，然後正向生成 ohlcData 以維持時間順序
-    const tempCloses = [];
-    let curPrice = tempPrice;
-    for (let i = 0; i < 30; i++) {
-      tempCloses.unshift(curPrice);
-      const factor = (rand() - 0.485) * 2; // -0.97 至 1.03
-      const dailyChg = factor * volatility;
-      curPrice = curPrice / (1 + dailyChg);
-    }
+    const dates = recent.map((b) => {
+      const parts = (b.date || '').split('-');
+      return parts.length === 3 ? `${parts[1]}/${parts[2]}` : (b.date || '');
+    });
 
-    // 現在正向為每天生成完整的 OHLC 與成交量
-    for (let i = 0; i < 30; i++) {
-      const close = tempCloses[i];
-      const prevClose = i > 0 ? tempCloses[i - 1] : close * 0.98;
-      
-      // 開盤價在昨日收盤價附近波動
-      const open = prevClose * (1 + (rand() - 0.5) * volatility * 0.4);
-      
-      // 最高、最低價
-      const maxOC = Math.max(open, close);
-      const minOC = Math.min(open, close);
-      const high = maxOC * (1 + rand() * volatility * 0.5);
-      const low = minOC * (1 - rand() * volatility * 0.5);
-      
-      // 成交量：當天漲跌幅度越大，成交量可能越大 (放量)
-      const volChangeFactor = 1 + Math.abs(close - open) / (open || 1) * 10;
-      const vol = baseVolume * (0.6 + rand() * 0.8) * volChangeFactor;
-
-      ohlcData.push({
-        open: parseFloat(open.toFixed(2)),
-        high: parseFloat(high.toFixed(2)),
-        low: parseFloat(low.toFixed(2)),
-        close: parseFloat(close.toFixed(2)),
-        volume: Math.round(vol),
-        isUp: close >= open
-      });
+    const insufficientHistory = ohlcData.length < 5;
+    // 完全沒有歷史時，至少用今日收盤畫一個點，避免圖表崩潰
+    if (ohlcData.length === 0) {
+      ohlcData.push({ open: closingPrice, high: closingPrice, low: closingPrice, close: closingPrice, volume: 0, isUp: true });
+      dates.push('今日');
     }
 
     const isPriceUp = closingPrice >= ohlcData[0].close;
@@ -886,6 +843,7 @@ export default function StockDetail({
     return {
       labels: dates,
       ohlc: ohlcData,
+      insufficientHistory,
       datasets: [
         {
           label: '收盤價',
@@ -931,10 +889,10 @@ export default function StockDetail({
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(14, 19, 38, 0.95)',
+        backgroundColor: 'var(--panel-strong)',
         titleColor: '#f8fafc',
         bodyColor: '#cbd5e1',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'var(--surface-3)',
         borderWidth: 1,
         padding: 12,
         callbacks: {
@@ -972,7 +930,7 @@ export default function StockDetail({
       yPrice: {
         type: 'linear',
         position: 'left',
-        grid: { color: 'rgba(255, 255, 255, 0.03)' },
+        grid: { color: 'var(--surface-2)' },
         ticks: { 
           color: '#cbd5e1', 
           font: { 
@@ -1105,10 +1063,10 @@ export default function StockDetail({
       />
       
       {/* 彈出視窗主體 (極致高質感毛玻璃) */}
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '1050px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '0', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.6), var(--shadow-neon-blue)', animation: 'slide-up-fade 0.25s cubic-bezier(0.4, 0, 0.2, 1)' }}>
+      <div className="glass-panel" style={{ width: '100%', maxWidth: '1050px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '0', border: '1px solid var(--surface-3)', borderRadius: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.6), var(--shadow-neon-blue)', animation: 'slide-up-fade 0.25s cubic-bezier(0.4, 0, 0.2, 1)' }}>
         
         {/* Header 列：名稱與狀態 */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', padding: '1.75rem 2rem', borderBottom: '1px solid var(--border-glass)', gap: '1rem', background: 'rgba(14, 19, 38, 0.4)' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', padding: '1.75rem 2rem', borderBottom: '1px solid var(--border-glass)', gap: '1rem', background: 'var(--surface-2)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ fontSize: '1.1rem', fontWeight: 800, padding: '0.3rem 0.75rem', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--accent-blue)', borderRadius: '10px', fontFamily: 'Outfit' }}>
               {stock.Code}
@@ -1191,7 +1149,7 @@ export default function StockDetail({
             <button 
               onClick={onClose} 
               className="btn-icon"
-              style={{ padding: '0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', color: 'var(--text-secondary)' }}
+              style={{ padding: '0.5rem', background: 'var(--surface-2)', borderRadius: '50%', color: 'var(--text-secondary)' }}
             >
               <X size={20} />
             </button>
@@ -1206,7 +1164,7 @@ export default function StockDetail({
             
             {/* 左側：當日報價與籌碼面 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div className="glass-card" style={{ background: 'rgba(14, 19, 38, 0.25)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '1.25rem 1.5rem' }}>
+              <div className="glass-card" style={{ background: 'var(--surface-2)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '1.25rem 1.5rem' }}>
                 
                 {/* 股價大型展示 */}
                 <div>
@@ -1248,7 +1206,7 @@ export default function StockDetail({
                     <span>今日最低 {displayLow.toFixed(2)}</span>
                     <span>今日最高 {displayHigh.toFixed(2)}</span>
                   </div>
-                  <div style={{ position: 'relative', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', margin: '0.5rem 0' }}>
+                  <div style={{ position: 'relative', height: '6px', background: 'var(--surface-3)', borderRadius: '3px', margin: '0.5rem 0' }}>
                     {/* 開高低收區間 */}
                     <div style={{
                       position: 'absolute',
@@ -1281,7 +1239,7 @@ export default function StockDetail({
                 </div>
 
                 {/* 今日量能與籌碼明細網格 */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', borderTop: '1px solid var(--surface-2)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                   <div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>今日成交量</div>
                     <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
@@ -1316,7 +1274,7 @@ export default function StockDetail({
             </div>
 
             {/* 右側：30 日發光霓虹走勢圖 */}
-            <div className="glass-card" style={{ background: 'rgba(14, 19, 38, 0.25)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div className="glass-card" style={{ background: 'var(--surface-2)', display: 'flex', flexDirection: 'column', height: '100%' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Activity size={15} style={{ color: 'var(--accent-blue)' }} /> 近 30 日走勢趨勢圖 (高仿真技術分析)
@@ -1325,6 +1283,11 @@ export default function StockDetail({
               </div>
               <div style={{ flex: 1, minHeight: '200px', position: 'relative' }}>
                 <Line data={chartData} options={chartOptions} />
+                {chartData.insufficientHistory && (
+                  <div style={{ position: 'absolute', top: 8, left: 8, fontSize: '0.68rem', color: 'var(--accent-gold)', background: 'rgba(0,0,0,0.45)', padding: '2px 8px', borderRadius: 6 }}>
+                    ⚠️ 真實歷史資料不足，走勢僅供參考（請先執行 backfill-history 或待每日累積）
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1334,8 +1297,8 @@ export default function StockDetail({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.75rem' }}>
             
             {/* 左下：同業指標評比 (Peer Comparison) */}
-            <div className="glass-card" style={{ background: 'rgba(14, 19, 38, 0.25)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.6rem' }}>
+            <div className="glass-card" style={{ background: 'var(--surface-2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--surface-3)', paddingBottom: '0.6rem' }}>
                 <ArrowLeftRight size={16} style={{ color: 'var(--accent-blue)' }} />
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 800 }}>同業平均指標評比 ({stock.Category}板塊)</h3>
               </div>
@@ -1350,7 +1313,7 @@ export default function StockDetail({
                     </span>
                   </div>
                   {/* 可視化條 */}
-                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', display: 'flex', overflow: 'hidden' }}>
+                  <div style={{ height: '6px', background: 'var(--surface-3)', borderRadius: '3px', display: 'flex', overflow: 'hidden' }}>
                     {stock.PEratio !== '' && (
                       <div 
                         style={{ 
@@ -1376,7 +1339,7 @@ export default function StockDetail({
                     </span>
                   </div>
                   {/* 可視化條 */}
-                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', display: 'flex', overflow: 'hidden' }}>
+                  <div style={{ height: '6px', background: 'var(--surface-3)', borderRadius: '3px', display: 'flex', overflow: 'hidden' }}>
                     {stock.PBratio !== '' && (
                       <div 
                         style={{ 
@@ -1401,7 +1364,7 @@ export default function StockDetail({
                     </span>
                   </div>
                   {/* 可視化條 */}
-                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', display: 'flex', overflow: 'hidden' }}>
+                  <div style={{ height: '6px', background: 'var(--surface-3)', borderRadius: '3px', display: 'flex', overflow: 'hidden' }}>
                     <div 
                       style={{ 
                         width: `${Math.min(100, (parseFloat(stock.DividendYield) / Math.max(1, parseFloat(stock.DividendYield), peerComparison.avgYield)) * 100)}%`, 
@@ -1418,7 +1381,7 @@ export default function StockDetail({
                 {/* 💡 核心財務指標解析小學堂 (Financial Metrics Glossary) */}
                 <div style={{ 
                   marginTop: '1.25rem',
-                  borderTop: '1px dashed rgba(255, 255, 255, 0.08)',
+                  borderTop: '1px dashed var(--surface-3)',
                   paddingTop: '1rem',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-blue)', marginBottom: '0.5rem' }}>
@@ -1446,9 +1409,9 @@ export default function StockDetail({
             </div>
 
             {/* 右下：AI 智慧選股評鑑與 Pros/Cons */}
-            <div className="glass-card" style={{ background: 'rgba(14, 19, 38, 0.25)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div className="glass-card" style={{ background: 'var(--surface-2)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.6rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--surface-3)', paddingBottom: '0.6rem' }}>
                   <Award size={16} style={{ color: 'var(--accent-gold)' }} />
                   <h3 style={{ fontSize: '0.95rem', fontWeight: 800 }}>智慧選股投資評鑑面板</h3>
                 </div>
@@ -1456,7 +1419,7 @@ export default function StockDetail({
                 {/* 綜合得分與流動性安全徽章 */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '14px', background: `rgba(255, 255, 255, 0.03)`, border: `2px solid ${valuationRating.gradeColor}`, boxShadow: `0 0 15px ${valuationRating.gradeColor}40`, color: valuationRating.gradeColor, fontSize: '1.9rem', fontWeight: 900, fontFamily: 'Outfit' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '14px', background: `var(--surface-2)`, border: `2px solid ${valuationRating.gradeColor}`, boxShadow: `0 0 15px ${valuationRating.gradeColor}40`, color: valuationRating.gradeColor, fontSize: '1.9rem', fontWeight: 900, fontFamily: 'Outfit' }}>
                       {valuationRating.grade}
                     </div>
                     <div>
@@ -1506,12 +1469,12 @@ export default function StockDetail({
                   gap: '0.75rem',
                   marginBottom: '1.25rem',
                   padding: '0.75rem',
-                  background: 'rgba(255, 255, 255, 0.01)',
-                  border: '1px solid rgba(255, 255, 255, 0.03)',
+                  background: 'var(--surface-1)',
+                  border: '1px solid var(--surface-2)',
                   borderRadius: '10px'
                 }}>
                   {/* 維度 1: 接單能力 */}
-                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                  <div style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-2)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <ShieldCheck size={10} style={{ color: 'var(--accent-blue)' }} /> 接單量能
@@ -1520,13 +1483,13 @@ export default function StockDetail({
                         {valuationRating.fundScore}分 ({valuationRating.orderLevel})
                       </span>
                     </div>
-                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                    <div style={{ height: '3px', background: 'var(--surface-2)', borderRadius: '1.5px', overflow: 'hidden' }}>
                       <div style={{ width: `${valuationRating.fundScore}%`, height: '100%', background: 'linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%)' }} />
                     </div>
                   </div>
 
                   {/* 維度 2: 技術動能 */}
-                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                  <div style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-2)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <TrendingUp size={10} style={{ color: 'var(--stock-up)' }} /> 技術結構
@@ -1535,13 +1498,13 @@ export default function StockDetail({
                         {valuationRating.techScore}分 ({valuationRating.techLevel})
                       </span>
                     </div>
-                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                    <div style={{ height: '3px', background: 'var(--surface-2)', borderRadius: '1.5px', overflow: 'hidden' }}>
                       <div style={{ width: `${valuationRating.techScore}%`, height: '100%', background: 'linear-gradient(90deg, #f43f5e 0%, #e11d48 100%)' }} />
                     </div>
                   </div>
 
                   {/* 維度 3: 籌碼集中 */}
-                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                  <div style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-2)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <Flame size={10} style={{ color: 'var(--accent-purple)' }} /> 籌碼大戶
@@ -1550,13 +1513,13 @@ export default function StockDetail({
                         {valuationRating.chipScore}分 ({valuationRating.chipLevel})
                       </span>
                     </div>
-                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                    <div style={{ height: '3px', background: 'var(--surface-2)', borderRadius: '1.5px', overflow: 'hidden' }}>
                       <div style={{ width: `${valuationRating.chipScore}%`, height: '100%', background: 'linear-gradient(90deg, #c084fc 0%, #a855f7 100%)' }} />
                     </div>
                   </div>
 
                   {/* 維度 4: 產業稀缺 */}
-                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                  <div style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-2)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <Star size={10} style={{ color: 'var(--accent-gold)' }} /> 趨勢稀缺
@@ -1565,13 +1528,13 @@ export default function StockDetail({
                         {valuationRating.trendScore}分 ({valuationRating.trendLevel})
                       </span>
                     </div>
-                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                    <div style={{ height: '3px', background: 'var(--surface-2)', borderRadius: '1.5px', overflow: 'hidden' }}>
                       <div style={{ width: `${valuationRating.trendScore}%`, height: '100%', background: 'linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%)' }} />
                     </div>
                   </div>
 
                   {/* 維度 5: 合理估值 */}
-                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                  <div style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-2)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <Coins size={10} style={{ color: '#06b6d4' }} /> 估值股利
@@ -1580,13 +1543,13 @@ export default function StockDetail({
                         {valuationRating.valScore}分 ({valuationRating.valLevel})
                       </span>
                     </div>
-                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                    <div style={{ height: '3px', background: 'var(--surface-2)', borderRadius: '1.5px', overflow: 'hidden' }}>
                       <div style={{ width: `${valuationRating.valScore}%`, height: '100%', background: 'linear-gradient(90deg, #22d3ee 0%, #06b6d4 100%)' }} />
                     </div>
                   </div>
 
                   {/* 維度 6: 流通安全 */}
-                  <div style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
+                  <div style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-2)', borderRadius: '6px', padding: '0.45rem 0.6rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <Activity size={10} style={{ color: '#10b981' }} /> 流通安全
@@ -1595,7 +1558,7 @@ export default function StockDetail({
                         {valuationRating.liqScore}分 ({valuationRating.liqLevelText})
                       </span>
                     </div>
-                    <div style={{ height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '1.5px', overflow: 'hidden' }}>
+                    <div style={{ height: '3px', background: 'var(--surface-2)', borderRadius: '1.5px', overflow: 'hidden' }}>
                       <div style={{ width: `${valuationRating.liqScore}%`, height: '100%', background: 'linear-gradient(90deg, #34d399 0%, #10b981 100%)' }} />
                     </div>
                   </div>
@@ -1735,7 +1698,7 @@ export default function StockDetail({
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
-                      <div key={item.label} style={{ background: 'rgba(0, 0, 0, 0.16)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '0.85rem' }}>
+                      <div key={item.label} style={{ background: 'rgba(0, 0, 0, 0.16)', border: '1px solid var(--surface-2)', borderRadius: '8px', padding: '0.85rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>
                             {item.label}
@@ -1752,7 +1715,7 @@ export default function StockDetail({
                   })}
                 </div>
 
-                <div style={{ background: 'rgba(0, 0, 0, 0.16)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '1rem' }}>
+                <div style={{ background: 'rgba(0, 0, 0, 0.16)', border: '1px solid var(--surface-2)', borderRadius: '8px', padding: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '1rem' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
@@ -1766,7 +1729,7 @@ export default function StockDetail({
                     </div>
                   </div>
 
-                  <div style={{ height: '28px', display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)' }}>
+                  <div style={{ height: '28px', display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--surface-3)', background: 'var(--surface-2)' }}>
                     <div style={{ width: `${chipDashboard.sellPressurePercent}%`, minWidth: chipDashboard.sellPressure > 0 ? '10px' : '0', background: 'linear-gradient(90deg, rgba(34, 197, 94, 0.55), rgba(16, 185, 129, 0.88))' }} title={`賣壓 ${chipDashboard.sellPressure.toLocaleString()} 張`} />
                     <div style={{ width: `${chipDashboard.buyPressurePercent}%`, minWidth: chipDashboard.buyPressure > 0 ? '10px' : '0', background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.65), rgba(248, 113, 113, 0.95))' }} title={`買壓 ${chipDashboard.buyPressure.toLocaleString()} 張`} />
                   </div>
@@ -1776,7 +1739,7 @@ export default function StockDetail({
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.65rem', marginTop: '0.85rem' }}>
                     {chipDashboard.signalRows.map((row) => (
-                      <div key={row.label} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.55rem' }}>
+                      <div key={row.label} style={{ borderTop: '1px solid var(--surface-3)', paddingTop: '0.55rem' }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>{row.label}</div>
                         <div className={row.tone} style={{ fontFamily: 'Outfit', fontWeight: 800, fontSize: '0.95rem' }}>
                           {row.value >= 0 ? '+' : ''}{row.value.toLocaleString()} {row.unit}
@@ -1788,7 +1751,7 @@ export default function StockDetail({
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1rem' }}>
-                <div style={{ background: 'rgba(0, 0, 0, 0.16)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '1rem' }}>
+                <div style={{ background: 'rgba(0, 0, 0, 0.16)', border: '1px solid var(--surface-2)', borderRadius: '8px', padding: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', marginBottom: '0.75rem' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
@@ -1803,7 +1766,7 @@ export default function StockDetail({
                     </div>
                   </div>
 
-                  <div style={{ height: '30px', display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.28)' }}>
+                  <div style={{ height: '30px', display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--surface-3)', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.28)' }}>
                     {chipDashboard.structureRows.map((row) => (
                       <div key={row.label} style={{ width: `${row.value}%`, background: row.color, minWidth: row.value > 0 ? '8px' : '0' }} title={`${row.label}: ${row.value}%`} />
                     ))}
@@ -1811,7 +1774,7 @@ export default function StockDetail({
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.65rem', marginTop: '0.85rem' }}>
                     {chipDashboard.structureRows.map((row) => (
-                      <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.55rem', fontSize: '0.76rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.035)', borderRadius: '6px', padding: '0.45rem 0.55rem' }}>
+                      <div key={row.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.55rem', fontSize: '0.76rem', background: 'var(--surface-2)', border: '1px solid var(--surface-2)', borderRadius: '6px', padding: '0.45rem 0.55rem' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontWeight: 700 }}>
                           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: row.color, display: 'inline-block' }} />
                           {row.label}
@@ -1871,7 +1834,7 @@ export default function StockDetail({
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '1rem' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.045)', borderRadius: '8px', padding: '0.85rem' }}>
+                  <div style={{ background: 'var(--surface-2)', border: '1px solid var(--surface-2)', borderRadius: '8px', padding: '0.85rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.8rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                         <div style={{ fontSize: '0.8rem', fontWeight: 850, color: 'var(--text-secondary)' }}>1000／400 張官方持股比</div>
@@ -1883,7 +1846,7 @@ export default function StockDetail({
                         <span><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: '#34d399', marginRight: 4 }} />400 張以下</span>
                       </div>
                     </div>
-                    <div style={{ height: 178, display: 'flex', alignItems: 'flex-end', gap: '0.42rem', padding: '0.4rem 0.1rem 0.15rem', borderBottom: '1px solid rgba(255,255,255,0.12)', background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0, transparent 1px) 0 0 / 100% 44px' }}>
+                    <div style={{ height: 178, display: 'flex', alignItems: 'flex-end', gap: '0.42rem', padding: '0.4rem 0.1rem 0.15rem', borderBottom: '1px solid var(--surface-3)', background: 'linear-gradient(180deg, var(--surface-2) 0, transparent 1px) 0 0 / 100% 44px' }}>
                       {chipDashboard.holdingTrend.map((item, idx) => (
                         <div key={item.label} style={{ flex: 1, minWidth: 12, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '0.3rem' }}>
                           <div style={{ flex: 1, width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '2px' }}>
@@ -1899,7 +1862,7 @@ export default function StockDetail({
                     </div>
                   </div>
 
-                  <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.045)', borderRadius: '8px', padding: '0.85rem' }}>
+                  <div style={{ background: 'var(--surface-2)', border: '1px solid var(--surface-2)', borderRadius: '8px', padding: '0.85rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.8rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                         <div style={{ fontSize: '0.8rem', fontWeight: 850, color: 'var(--text-secondary)' }}>近月法人籌碼直條圖</div>
@@ -1910,8 +1873,8 @@ export default function StockDetail({
                         <span style={{ color: '#16a34a', fontWeight: 800 }}>最大賣超 {Math.min(0, chipDashboard.largestMonthlySell).toLocaleString()}</span>
                       </div>
                     </div>
-                    <div style={{ position: 'relative', height: 178, display: 'flex', alignItems: 'stretch', gap: '0.65rem', padding: '0.25rem 0.15rem 1.05rem', background: 'linear-gradient(180deg, rgba(255,255,255,0.035) 0, transparent 1px) 0 0 / 100% 44px' }}>
-                      <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 1, background: 'rgba(255,255,255,0.18)' }} />
+                    <div style={{ position: 'relative', height: 178, display: 'flex', alignItems: 'stretch', gap: '0.65rem', padding: '0.25rem 0.15rem 1.05rem', background: 'linear-gradient(180deg, var(--surface-2) 0, transparent 1px) 0 0 / 100% 44px' }}>
+                      <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 1, background: 'var(--surface-3)' }} />
                       {chipDashboard.monthlyFlow.map((item) => {
                         const barHeight = Math.max(6, (Math.abs(item.netTotal) / chipDashboard.maxMonthlyAbs) * 46);
                         const isPositive = item.netTotal >= 0;
@@ -1990,19 +1953,19 @@ export default function StockDetail({
                   <div style={{ display: 'flex', gap: '4px' }}>
                     <button 
                       onClick={() => setTargetSellPrice((closingPrice * 1.05).toFixed(2))}
-                      style={{ fontSize: '0.7rem', padding: '0.15rem 0.35rem', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '3px', cursor: 'pointer' }}
+                      style={{ fontSize: '0.7rem', padding: '0.15rem 0.35rem', background: 'var(--surface-3)', color: 'var(--text-secondary)', border: '1px solid var(--surface-3)', borderRadius: '3px', cursor: 'pointer' }}
                     >
                       +5%
                     </button>
                     <button 
                       onClick={() => setTargetSellPrice((closingPrice * 1.10).toFixed(2))}
-                      style={{ fontSize: '0.7rem', padding: '0.15rem 0.35rem', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '3px', cursor: 'pointer' }}
+                      style={{ fontSize: '0.7rem', padding: '0.15rem 0.35rem', background: 'var(--surface-3)', color: 'var(--text-secondary)', border: '1px solid var(--surface-3)', borderRadius: '3px', cursor: 'pointer' }}
                     >
                       +10%
                     </button>
                     <button 
                       onClick={() => setTargetSellPrice((closingPrice * 1.20).toFixed(2))}
-                      style={{ fontSize: '0.7rem', padding: '0.15rem 0.35rem', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '3px', cursor: 'pointer' }}
+                      style={{ fontSize: '0.7rem', padding: '0.15rem 0.35rem', background: 'var(--surface-3)', color: 'var(--text-secondary)', border: '1px solid var(--surface-3)', borderRadius: '3px', cursor: 'pointer' }}
                     >
                       +20%
                     </button>
@@ -2021,7 +1984,7 @@ export default function StockDetail({
             </div>
 
             {/* 試算結果輸出區 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', background: 'rgba(0, 0, 0, 0.2)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '1.25rem 1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', background: 'rgba(0, 0, 0, 0.2)', border: '1px solid var(--surface-2)', borderRadius: '12px', padding: '1.25rem 1.5rem' }}>
               
               {/* 左邊：短線交易利潤試算 */}
               <div>
@@ -2042,7 +2005,7 @@ export default function StockDetail({
                     <span style={{ color: 'var(--text-muted)' }}>預估政府證券交易稅 (0.3%)</span>
                     <span style={{ fontFamily: 'Outfit', fontWeight: 600 }}>NT$ {calcResults.stockTax.toLocaleString()} 元</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem', marginBottom: '0.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderBottom: '1px solid var(--surface-3)', paddingBottom: '0.5rem', marginBottom: '0.25rem' }}>
                     <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>總計投入總資金</span>
                     <span style={{ fontFamily: 'Outfit', fontWeight: 700 }}>NT$ {calcResults.totalCost.toLocaleString()} 元</span>
                   </div>
@@ -2065,7 +2028,7 @@ export default function StockDetail({
               </div>
 
               {/* 右邊：長期定存存股利息試算 */}
-              <div style={{ borderLeft: '1px solid rgba(255,255,255,0.05)', paddingLeft: '1.5rem' }}>
+              <div style={{ borderLeft: '1px solid var(--surface-3)', paddingLeft: '1.5rem' }}>
                 <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--accent-gold)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   💰 長期定存存股利息評估
                 </h4>
@@ -2080,7 +2043,7 @@ export default function StockDetail({
                       <span style={{ color: 'var(--text-muted)' }}>您持有的股票總數</span>
                       <span style={{ fontWeight: 700 }}>{buyLots} 張 ({(buyLots * 1000).toLocaleString()} 股)</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderBottom: '1px solid var(--surface-3)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
                       <span style={{ color: 'var(--text-muted)' }}>估計持有一年總成本</span>
                       <span style={{ fontWeight: 700, fontFamily: 'Outfit' }}>NT$ {calcResults.totalCost.toLocaleString()} 元</span>
                     </div>
@@ -2141,7 +2104,7 @@ export default function StockDetail({
                 💰 定期定額歷史存股回測與複利增長試算機
               </h3>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: '6px' }}>
-                (定期定額複利滾動，假設股利自動再投資，基於該股基本面與產業股性回測)
+                (定期定額複利滾動，假設股利自動再投資；{dcaResults.assumptionSource === 'historical' ? `年化成長率採真實歷史推估 ${dcaResults.annualPriceReturn}%` : '歷史不足，採保守估計值，僅供情境試算非歷史回測'})
               </span>
             </div>
 
@@ -2202,7 +2165,7 @@ export default function StockDetail({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.75rem' }}>
               
               {/* 左邊：數字統計數據 */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem', background: 'rgba(0, 0, 0, 0.15)', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '12px', padding: '1.25rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1rem', background: 'rgba(0, 0, 0, 0.15)', border: '1px solid var(--surface-1)', borderRadius: '12px', padding: '1.25rem' }}>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
@@ -2226,7 +2189,7 @@ export default function StockDetail({
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderTop: '1px solid var(--surface-2)', paddingTop: '0.5rem' }}>
                     <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>累積淨回報率 (ROI)</span>
                     <span style={{ fontFamily: 'Outfit', fontWeight: 900 }} className="up-text">
                       +{dcaResults.roi}%
@@ -2278,7 +2241,7 @@ export default function StockDetail({
               <button
                 type="button"
                 onClick={() => setChipHelpKey(null)}
-                style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', borderRadius: 8, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                style={{ border: '1px solid var(--surface-3)', background: 'var(--surface-2)', color: 'var(--text-secondary)', borderRadius: 8, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
               >
                 <X size={15} />
               </button>

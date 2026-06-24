@@ -155,10 +155,10 @@ export default function Portfolio({
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(14, 19, 38, 0.95)',
+        backgroundColor: 'var(--panel-strong)',
         titleColor: '#f8fafc',
         bodyColor: '#cbd5e1',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'var(--surface-3)',
         borderWidth: 1,
         callbacks: {
           label: (context) => {
@@ -199,10 +199,10 @@ export default function Portfolio({
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(14, 19, 38, 0.95)',
+        backgroundColor: 'var(--panel-strong)',
         titleColor: '#f8fafc',
         bodyColor: '#cbd5e1',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'var(--surface-3)',
         borderWidth: 1,
         callbacks: {
           label: (context) => {
@@ -215,7 +215,7 @@ export default function Portfolio({
     },
     scales: {
       x: {
-        grid: { color: 'rgba(255, 255, 255, 0.03)' },
+        grid: { color: 'var(--surface-2)' },
         ticks: {
           color: '#64748b',
           font: { size: 9 },
@@ -274,14 +274,14 @@ export default function Portfolio({
             {/* 投資組合四大數據卡 */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
               
-              <div className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '1.1rem 1.35rem' }}>
+              <div className="glass-card" style={{ background: 'var(--surface-1)', padding: '1.1rem 1.35rem' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>累計投入本金</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Outfit', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                   $ {Math.round(portfolioStats.totalCost).toLocaleString('zh-TW')} <span style={{ fontSize: '0.78rem', fontWeight: 500 }}>元</span>
                 </div>
               </div>
 
-              <div className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '1.1rem 1.35rem' }}>
+              <div className="glass-card" style={{ background: 'var(--surface-1)', padding: '1.1rem 1.35rem' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>目前組合市值</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Outfit', color: 'var(--text-primary)', marginTop: '0.25rem' }}>
                   $ {Math.round(portfolioStats.totalValue).toLocaleString('zh-TW')} <span style={{ fontSize: '0.78rem', fontWeight: 500 }}>元</span>
@@ -289,7 +289,7 @@ export default function Portfolio({
               </div>
 
               <div className="glass-card" style={{ 
-                background: 'rgba(255,255,255,0.02)', 
+                background: 'var(--surface-1)', 
                 padding: '1.1rem 1.35rem',
                 border: portfolioStats.totalPnl >= 0 ? '1px solid rgba(255, 77, 77, 0.15)' : '1px solid rgba(0, 230, 118, 0.15)',
                 boxShadow: portfolioStats.totalPnl >= 0 ? '0 0 15px rgba(255, 77, 77, 0.05)' : '0 0 15px rgba(0, 230, 118, 0.05)'
@@ -303,7 +303,7 @@ export default function Portfolio({
                 </div>
               </div>
 
-              <div className="glass-card" style={{ background: 'rgba(255,255,255,0.02)', padding: '1.1rem 1.35rem', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
+              <div className="glass-card" style={{ background: 'var(--surface-1)', padding: '1.1rem 1.35rem', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>預估被動年息收</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: 'Outfit', color: 'var(--accent-gold)', marginTop: '0.25rem', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
                   $ {Math.round(portfolioStats.totalDividend).toLocaleString('zh-TW')}
@@ -319,7 +319,7 @@ export default function Portfolio({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '0.5rem' }}>
               
               {/* 產業配置佔比圓餅圖 */}
-              <div className="glass-card" style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', border: '1px solid rgba(255, 255, 255, 0.03)' }}>
+              <div className="glass-card" style={{ background: 'var(--surface-1)', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', border: '1px solid var(--surface-2)' }}>
                 <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Activity size={15} style={{ color: 'var(--accent-blue)' }} /> 投資資金板塊配置 (產業比重佔比)
                 </h4>
@@ -329,7 +329,7 @@ export default function Portfolio({
               </div>
 
               {/* 個股未實現損益排行榜 */}
-              <div className="glass-card" style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', border: '1px solid rgba(255, 255, 255, 0.03)' }}>
+              <div className="glass-card" style={{ background: 'var(--surface-1)', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', border: '1px solid var(--surface-2)' }}>
                 <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <TrendingUp size={15} style={{ color: 'var(--accent-purple)' }} /> 個股損益貢獻排行 (降序排行)
                 </h4>
@@ -344,7 +344,7 @@ export default function Portfolio({
             <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid var(--border-glass)' }}>
               <table className="stock-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
                 <thead>
-                  <tr style={{ background: 'rgba(14, 19, 38, 0.65)' }}>
+                  <tr style={{ background: 'var(--panel-strong)' }}>
                     <th style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700 }}>股票代碼/名稱</th>
                     <th style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>庫存張數</th>
                     <th style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'right' }}>買入均價 / 目前市價</th>
@@ -360,7 +360,7 @@ export default function Portfolio({
                     const changeClass = isUp ? 'up-text' : 'down-text';
 
                     return (
-                      <tr key={item.code} className="table-row-hover" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.02)', background: 'rgba(14, 19, 38, 0.2)' }}>
+                      <tr key={item.code} className="table-row-hover" style={{ borderBottom: '1px solid var(--surface-1)', background: 'var(--surface-2)' }}>
                         <td 
                           style={{ padding: '0.85rem 1rem', cursor: 'pointer' }}
                           onClick={() => onSelectStock(item.code)}
@@ -376,7 +376,7 @@ export default function Portfolio({
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
                             <button 
                               onClick={() => onUpdatePortfolioLots(item.code, -1)}
-                              style={{ padding: '0.2rem', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                              style={{ padding: '0.2rem', background: 'var(--surface-2)', border: '1px solid var(--surface-3)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)' }}
                               title="減少 1 張"
                             >
                               <Minus size={11} />
@@ -386,7 +386,7 @@ export default function Portfolio({
                             </span>
                             <button 
                               onClick={() => onUpdatePortfolioLots(item.code, 1)}
-                              style={{ padding: '0.2rem', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                              style={{ padding: '0.2rem', background: 'var(--surface-2)', border: '1px solid var(--surface-3)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)' }}
                               title="加碼 1 張"
                             >
                               <Plus size={11} />
@@ -395,12 +395,12 @@ export default function Portfolio({
                         </td>
                         <td style={{ padding: '0.85rem 1rem', textAlign: 'right', fontFamily: 'Outfit', fontSize: '0.88rem' }}>
                           <span style={{ color: 'var(--text-muted)' }}>{item.buyPrice.toFixed(2)}</span>
-                          <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 6px' }}>/</span>
+                          <span style={{ color: 'var(--surface-3)', margin: '0 6px' }}>/</span>
                           <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>{item.currentPrice.toFixed(2)}</span>
                         </td>
                         <td style={{ padding: '0.85rem 1rem', textAlign: 'right', fontFamily: 'Outfit', fontSize: '0.88rem' }}>
                           <span style={{ color: 'var(--text-muted)' }}>${Math.round(item.cost).toLocaleString()}</span>
-                          <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 6px' }}>/</span>
+                          <span style={{ color: 'var(--surface-3)', margin: '0 6px' }}>/</span>
                           <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>${Math.round(item.value).toLocaleString()}</span>
                         </td>
                         <td style={{ padding: '0.85rem 1rem', textAlign: 'right', fontFamily: 'Outfit', fontSize: '0.88rem' }} className={changeClass}>

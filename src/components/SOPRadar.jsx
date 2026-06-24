@@ -23,7 +23,7 @@ const ALL_AVAILABLE_SECTORS = [
   '鋼鐵工業', '食品工業', '汽車工業', '其他'
 ];
 
-export default function SOPRadar({ stocks, onSelectStock }) {
+export default function SOPRadar({ stocks, onSelectStock, historyData = {}, fundamentalsData = {}, officialChipData = {} }) {
   // 1. 篩選策略狀態
   const [radarMode, setRadarMode] = useState('long'); // 'long' (多頭多單模式), 'short' (空頭空單模式)
   const [hotSectors, setHotSectors] = useState(['半導體', '電腦週邊', '電子零組件']);
@@ -45,9 +45,20 @@ export default function SOPRadar({ stocks, onSelectStock }) {
   // 2. 進行全台股 SOP 精確篩選
   const screeningResults = useMemo(() => {
     return stocks.map(stock => {
-      return checkSOPStrategy(stock, hotSectors, { maxCapital, relaxKD, radarMode });
+      return checkSOPStrategy(stock, hotSectors, {
+        maxCapital,
+        relaxKD,
+        radarMode,
+        history: historyData[stock.Code],
+        fundamentals: fundamentalsData[stock.Code],
+        chip: officialChipData[stock.Code],
+        capitalYi: stock.CapitalYi
+      });
     });
-  }, [stocks, hotSectors, maxCapital, relaxKD, radarMode]);
+  }, [stocks, hotSectors, maxCapital, relaxKD, radarMode, historyData, fundamentalsData, officialChipData]);
+
+  // 是否已有足夠真實歷史可供技術面判定
+  const hasRealHistory = useMemo(() => screeningResults.some((r) => r.dataSufficient), [screeningResults]);
 
   // 3. 計算三步驟漏斗家數
   const funnelStats = useMemo(() => {
@@ -131,7 +142,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
           
           {/* 雙模式切換按鈕 + 重設按鈕 */}
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: '4px', background: 'rgba(14, 19, 38, 0.6)', border: '1px solid var(--border-glass)', borderRadius: '8px', padding: '3px' }}>
+            <div style={{ display: 'flex', gap: '4px', background: 'var(--panel-strong)', border: '1px solid var(--border-glass)', borderRadius: '8px', padding: '3px' }}>
               <button
                 onClick={() => handleSwitchMode('long')}
                 style={{
@@ -217,7 +228,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
                       borderRadius: '8px',
                       cursor: 'pointer',
                       border: isSelected ? `1px solid ${themeAccent}` : '1px solid var(--border-glass)',
-                      background: isSelected ? (isShort ? 'rgba(6, 182, 212, 0.12)' : 'rgba(168, 85, 247, 0.12)') : 'rgba(255, 255, 255, 0.02)',
+                      background: isSelected ? (isShort ? 'rgba(6, 182, 212, 0.12)' : 'rgba(168, 85, 247, 0.12)') : 'var(--surface-1)',
                       color: isSelected ? themeAccent : 'var(--text-secondary)',
                       transition: 'all 0.2s ease',
                       boxShadow: isSelected ? `0 2px 8px ${isShort ? 'rgba(6, 182, 212, 0.1)' : 'rgba(168, 85, 247, 0.1)'}` : 'none'
@@ -256,7 +267,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
             </div>
 
             {/* KD金叉/死叉放寬 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.01)', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-1)', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
               <div>
                 <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {isShort ? '放寬 KD 死亡交叉時機' : '放寬 KD 黃金交叉時機'}
@@ -321,7 +332,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
                   {funnelStats.pass1} / {funnelStats.total} 檔
                 </span>
               </div>
-              <div style={{ height: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
+              <div style={{ height: '24px', background: 'var(--surface-2)', border: '1px solid var(--surface-3)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
                 <div style={{
                   width: `${(funnelStats.pass1 / funnelStats.total * 100) || 0}%`,
                   background: 'linear-gradient(90deg, rgba(56, 189, 248, 0.15) 0%, rgba(56, 189, 248, 0.45) 100%)',
@@ -350,7 +361,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
                   {funnelStats.pass2} / {funnelStats.pass1} 檔
                 </span>
               </div>
-              <div style={{ height: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
+              <div style={{ height: '24px', background: 'var(--surface-2)', border: '1px solid var(--surface-3)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
                 <div style={{
                   width: `${(funnelStats.pass2 / funnelStats.pass1 * 100) || 0}%`,
                   background: `linear-gradient(90deg, ${isShort ? 'rgba(6, 182, 212, 0.15)' : 'rgba(168, 85, 247, 0.15)'} 0%, ${isShort ? 'rgba(6, 182, 212, 0.45)' : 'rgba(168, 85, 247, 0.45)'} 100%)`,
@@ -379,7 +390,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
                   {funnelStats.pass3} / {funnelStats.pass2} 檔
                 </span>
               </div>
-              <div style={{ height: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
+              <div style={{ height: '24px', background: 'var(--surface-2)', border: '1px solid var(--surface-3)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
                 <div style={{
                   width: `${(funnelStats.pass3 / funnelStats.pass2 * 100) || 0}%`,
                   background: `linear-gradient(90deg, ${isShort ? 'rgba(0, 230, 118, 0.15)' : 'rgba(245, 158, 11, 0.15)'} 0%, ${isShort ? 'rgba(0, 230, 118, 0.45)' : 'rgba(245, 158, 11, 0.45)'} 100%)`,
@@ -401,7 +412,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
           </div>
 
           {/* 總結說明 */}
-          <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '1rem', marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ background: 'var(--surface-1)', border: '1px solid var(--surface-3)', borderRadius: '12px', padding: '1rem', marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <AlertCircle size={20} style={{ color: 'var(--accent-blue)', flexShrink: 0 }} />
             <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', lineHeight: '1.45', margin: 0 }}>
               <strong>💡 提示</strong>：SOP {isShort ? '空頭放空' : '多頭飆股'}篩選公式極為嚴格。若結果偏少，可點擊上方<strong>「重設參數」</strong>、包含更多產業，或開啟<strong>「放寬 KD 時機」</strong>。
@@ -411,6 +422,14 @@ export default function SOPRadar({ stocks, onSelectStock }) {
 
         {/* 右側：篩選結果與精緻摺疊卡片 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {!hasRealHistory && (
+            <div className="glass-panel" style={{ padding: '1rem 1.25rem', borderLeft: '4px solid var(--accent-gold)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <AlertCircle size={20} style={{ color: 'var(--accent-gold)', flexShrink: 0 }} />
+              <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                <strong>尚無足夠真實歷史資料</strong>：技術面判定（步驟二、三）需要每檔至少約 35 個交易日的真實日線。請先於專案根目錄執行 <code>node scripts/backfill-history.js</code> 回補歷史，或等每日 GitHub Actions 自動累積數週後即會生效。基本與籌碼初選（步驟一）已使用真實資料。
+              </p>
+            </div>
+          )}
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -421,7 +440,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
             </h3>
             
             {/* 篩選切換開關 */}
-            <div style={{ display: 'flex', gap: '4px', background: 'rgba(14, 19, 38, 0.6)', border: '1px solid var(--border-glass)', borderRadius: '8px', padding: '3px' }}>
+            <div style={{ display: 'flex', gap: '4px', background: 'var(--panel-strong)', border: '1px solid var(--border-glass)', borderRadius: '8px', padding: '3px' }}>
               <button
                 onClick={() => setFilterType('all_bull')}
                 style={{
@@ -584,14 +603,14 @@ export default function SOPRadar({ stocks, onSelectStock }) {
                         
                         {/* 步驟一詳細檢核 */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', paddingRight: '0.5rem' }}>
-                          <div style={{ fontWeight: 700, color: 'var(--accent-blue)', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.3rem', marginBottom: '0.25rem' }}>
+                          <div style={{ fontWeight: 700, color: 'var(--accent-blue)', borderBottom: '1px solid var(--surface-2)', paddingBottom: '0.3rem', marginBottom: '0.25rem' }}>
                             步驟一：基本與籌碼過濾
                           </div>
                           
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ color: 'var(--text-muted)' }}>總股本限制:</span>
                             <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                              {s.capital} 億 ( {s.isCapitalOk ? <CheckCircle2 size={12} color="#22c55e" /> : <XCircle size={12} color="#ff4d4d" />} )
+                              {s.capital == null ? 'N/A' : s.capital + ' 億'} ( {s.isCapitalOk ? <CheckCircle2 size={12} color="#22c55e" /> : <XCircle size={12} color="#ff4d4d" />} )
                             </span>
                           </div>
 
@@ -600,7 +619,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
                               {isShort ? '單月營收衰退 (YoY/MoM):' : '單月營收年增 (YoY/MoM):'}
                             </span>
                             <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                              {s.revenueGrowth}% ( {s.isRevenueOk ? <CheckCircle2 size={12} color="#22c55e" /> : <XCircle size={12} color="#ff4d4d" />} )
+                              {s.revenueGrowth == null ? '資料不足' : s.revenueGrowth + '%'} ( {s.isRevenueOk ? <CheckCircle2 size={12} color="#22c55e" /> : <XCircle size={12} color="#ff4d4d" />} )
                             </span>
                           </div>
 
@@ -609,7 +628,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
                               {isShort ? '最新單季 EPS (虧損/微利):' : '最新單季 EPS:'}
                             </span>
                             <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                              {s.eps} 元 ( {s.isEpsOk ? <CheckCircle2 size={12} color="#22c55e" /> : <XCircle size={12} color="#ff4d4d" />} )
+                              {s.eps == null ? '資料不足' : s.eps + ' 元'} ( {s.isEpsOk ? <CheckCircle2 size={12} color="#22c55e" /> : <XCircle size={12} color="#ff4d4d" />} )
                             </span>
                           </div>
 
@@ -618,14 +637,14 @@ export default function SOPRadar({ stocks, onSelectStock }) {
                               {isShort ? '法人3日累計籌碼 (淨賣超):' : '法人3日累計籌碼 (淨買超):'}
                             </span>
                             <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                              {s.chipNetBuy > 0 ? `+${s.chipNetBuy}` : s.chipNetBuy}百萬 ( {s.isChipOk ? <CheckCircle2 size={12} color="#22c55e" /> : <XCircle size={12} color="#ff4d4d" />} )
+                              {s.chipNetBuy == null ? '資料不足' : (s.chipNetBuy > 0 ? '+' + s.chipNetBuy : s.chipNetBuy) + ' 張'} ( {s.isChipOk ? <CheckCircle2 size={12} color="#22c55e" /> : <XCircle size={12} color="#ff4d4d" />} )
                             </span>
                           </div>
                         </div>
 
                         {/* 步驟二詳細檢核 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', borderLeft: '1px solid rgba(255,255,255,0.05)', paddingLeft: '0.75rem' }}>
-                          <div style={{ fontWeight: 700, color: themeAccent, borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.3rem', marginBottom: '0.25rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', borderLeft: '1px solid var(--surface-3)', paddingLeft: '0.75rem' }}>
+                          <div style={{ fontWeight: 700, color: themeAccent, borderBottom: '1px solid var(--surface-2)', paddingBottom: '0.3rem', marginBottom: '0.25rem' }}>
                             步驟二：技術指標與型態
                           </div>
                           
@@ -678,7 +697,7 @@ export default function SOPRadar({ stocks, onSelectStock }) {
                       </div>
 
                       {/* 決策按鈕 */}
-                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem', marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ borderTop: '1px solid var(--surface-3)', paddingTop: '1rem', marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                         <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                           * 註：該結果基於台股{isShort ? '空頭' : '多頭'}經典 SOP 公式進行即時運算，投資仍需控制部位風險。
                         </span>

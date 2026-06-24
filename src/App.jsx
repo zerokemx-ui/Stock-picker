@@ -14,7 +14,7 @@ import {
   Briefcase,
   CalendarDays
 } from 'lucide-react';
-import { PRESET_STRATEGIES } from './utils/stockUtils';
+import { PRESET_STRATEGIES, computeIndicators } from './utils/stockUtils';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const StockFilter = lazy(() => import('./components/StockFilter'));
@@ -60,6 +60,10 @@ export default function App() {
   });
   const [canUseLiveApi, setCanUseLiveApi] = useState(false);
   const [officialChipData, setOfficialChipData] = useState({});
+  const [historyData, setHistoryData] = useState({});       // 真實日線歷史 (history.json)，延遲載入
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [fundamentalsData, setFundamentalsData] = useState({}); // 真實月營收 (fundamentals.json)
 
   // 2. 使用者自訂狀態 (自選股與對比)
   const [watchlist, setWatchlist] = useState(() => {
@@ -102,6 +106,7 @@ export default function App() {
   const [isLargeFont, setIsLargeFont] = useState(() => {
     return localStorage.getItem('tw_stock_large_font') === 'true';
   });
+  const [theme, setTheme] = useState(() => localStorage.getItem('tw_stock_theme') || 'dark');
 
   // GitHub Actions 手動雲端觸發狀態
   const [githubToken, setGithubToken] = useState(() => {
@@ -140,6 +145,12 @@ export default function App() {
       document.documentElement.classList.remove('large-font-mode');
     }
   }, [isLargeFont]);
+
+  // 套用淺色 / 深色主題
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('tw_stock_theme', theme);
+  }, [theme]);
 
   // 合併預設與自訂策略
   const allStrategies = useMemo(() => {
@@ -336,17 +347,36 @@ export default function App() {
       const resData = await response.json();
       if (resData.success && Array.isArray(resData.data)) {
         writeCachedSnapshot(resData);
-        setStocks(resData.data);
-        try {
-          const chipResponse = await fetch(`./api/chip.json?_=${Date.now()}`, { cache: 'no-store' });
-          if (chipResponse.ok) {
-            const chipPayload = await chipResponse.json();
-            setOfficialChipData(chipPayload && chipPayload.data ? chipPayload.data : {});
-          }
-        } catch (chipError) {
-          console.warn('Official chip data is unavailable:', chipError);
-          setOfficialChipData({});
-        }
+        // 載入輔助真實資料（籌碼/歷史/基本面/公司資料），全部容錯，缺檔則自動回退
+        const loadAux = async (url) => {
+          try {
+            const r = await fetch(`${url}?_=${Date.now()}`, { cache: 'no-store' });
+            if (r.ok) return await r.json();
+          } catch (e) { /* 缺檔忽略 */ }
+          return null;
+        };
+        // 初次載入只抓輕量資料；大型 history.json 改為切到 SOP 雷達分頁時才載入
+        const [chipPayload, fundPayload, companyPayload] = await Promise.all([
+          loadAux('./api/chip.json'),
+          loadAux('./api/fundamentals.json'),
+          loadAux('./api/company.json')
+        ]);
+        const chipMap = chipPayload && chipPayload.data ? chipPayload.data : {};
+        const fundMap = fundPayload && fundPayload.data ? fundPayload.data : {};
+        const companyMap = companyPayload && companyPayload.data ? companyPayload.data : {};
+        setOfficialChipData(chipMap);
+        setFundamentalsData(fundMap);
+        // 以真實公司資料修正產業/股本；技術指標待 history 載入後再注入
+        const enriched = resData.data.map((s) => {
+          const company = companyMap[s.Code];
+          return {
+            ...s,
+            Category: company && company.industry ? company.industry : s.Category,
+            CapitalYi: company && company.capitalYi != null ? company.capitalYi : (s.CapitalYi ?? null),
+            Indicators: computeIndicators(historyData[s.Code])
+          };
+        });
+        setStocks(enriched);
         const isFallbackData = resData.isFallback || resData.source === 'static_fallback' || resData.source === 'empty_fallback';
         setIsOffline(isFallbackData);
         setDataStatus({
@@ -396,8 +426,36 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchStocksData();
+    // 開啟網頁即抓取最新部署的數據（停用瀏覽器快取）
+    fetchStocksData(false, true);
   }, []);
+
+  // 延遲載入大型 history.json：只有切到 SOP 雷達分頁、或選用需歷史的策略時才載入
+  const loadHistory = async () => {
+    if (historyLoaded || historyLoading) return;
+    setHistoryLoading(true);
+    try {
+      const r = await fetch(`./api/history.json?_=${Date.now()}`, { cache: 'no-store' });
+      if (r.ok) {
+        const payload = await r.json();
+        const historyMap = payload && payload.data ? payload.data : {};
+        setHistoryData(historyMap);
+        // 補上技術指標
+        setStocks((prev) => prev.map((s) => ({ ...s, Indicators: computeIndicators(historyMap[s.Code]) })));
+      }
+    } catch (e) {
+      console.warn('history.json 載入失敗:', e);
+    }
+    setHistoryLoaded(true);
+    setHistoryLoading(false);
+  };
+
+  useEffect(() => {
+    const needsHistory =
+      activeTab === 'sop_radar' || activeStrategy === 'momentum' || activeStrategy === 'breakout';
+    if (needsHistory) loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, activeStrategy]);
 
   // 5.2 手動觸發 GitHub Actions 雲端工作流
   const handleTriggerWorkflow = async () => {
@@ -611,7 +669,7 @@ export default function App() {
     <div className="container">
       
       {/* 頂部標頭列 */}
-      <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', gap: '1rem' }}>
+      <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.75rem', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ padding: '0.5rem', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--accent-blue)', borderRadius: '10px' }}>
@@ -647,11 +705,6 @@ export default function App() {
         {/* 系統功能按鈕列 (刷新、自選股抽屜切換) */}
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, padding: '0.55rem 0.7rem', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '8px', background: 'rgba(255,255,255,0.025)' }}>
-            <CalendarDays size={13} style={{ color: 'var(--accent-blue)' }} />
-            {lastUpdated || '載入中'}
-          </span>
-          
           <button 
             onClick={() => fetchStocksData(true)} 
             disabled={loading}
@@ -661,6 +714,16 @@ export default function App() {
           >
             <RefreshCw size={14} className={loading ? 'spin-anim' : ''} />
             同步行情
+          </button>
+
+          <button
+            onClick={() => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'))}
+            className="btn-secondary"
+            style={{ padding: '0.6rem 0.9rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+            title="切換淺色 / 深色主題"
+          >
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {theme === 'dark' ? '淺色' : '深色'}
           </button>
 
           <button 
@@ -883,6 +946,9 @@ export default function App() {
               <SOPRadar 
                 stocks={stocks} 
                 onSelectStock={handleSelectStock} 
+                historyData={historyData}
+                fundamentalsData={fundamentalsData}
+                officialChipData={officialChipData}
               />
             )}
 
@@ -936,6 +1002,8 @@ export default function App() {
             activeStrategy={activeStrategy}
             enableLiveData={canUseLiveApi}
             officialChipData={officialChipData}
+            historyData={historyData}
+            fundamentalsMap={fundamentalsData}
             onAddToPortfolio={handleAddToPortfolio}
             onToggleWatchlist={handleToggleWatchlist}
             onToggleCompare={handleToggleCompare}
@@ -950,7 +1018,7 @@ export default function App() {
           {/* 半透明背景遮罩 */}
           <div 
             onClick={() => setIsGithubPanelOpen(false)}
-            style={{ position: 'absolute', width: '100%', height: '100%', background: 'rgba(5, 8, 20, 0.75)', backdropFilter: 'blur(8px)' }}
+            style={{ position: 'absolute', width: '100%', height: '100%', background: 'var(--panel-strong)', backdropFilter: 'blur(8px)' }}
           />
           
           {/* 彈窗主體 */}
@@ -1043,7 +1111,7 @@ export default function App() {
 
       {/* 全域美觀微調的 Toast 懸浮通知 */}
       {toastMessage && (
-        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: 'rgba(14, 19, 38, 0.95)', border: '1px solid rgba(56, 189, 248, 0.25)', boxShadow: '0 8px 30px rgba(0,0,0,0.5), var(--shadow-neon-blue)', padding: '0.85rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 99999, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', animation: 'slide-up-fade 0.3s ease-out' }}>
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: 'var(--panel-strong)', border: '1px solid rgba(56, 189, 248, 0.25)', boxShadow: '0 8px 30px rgba(0,0,0,0.5), var(--shadow-neon-blue)', padding: '0.85rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 99999, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', animation: 'slide-up-fade 0.3s ease-out' }}>
           {toastMessage}
         </div>
       )}

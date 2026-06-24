@@ -392,7 +392,7 @@ export default function StockFilter({
               </div>
 
               {/* 門檻值預覽與調整 */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', background: 'rgba(0,0,0,0.15)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', background: 'rgba(0,0,0,0.15)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--surface-2)' }}>
                 {/* 價格 */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>價格區間 (元)</span>
@@ -402,7 +402,7 @@ export default function StockFilter({
                       placeholder="最低" 
                       value={stratCriteria.minPrice}
                       onChange={(e) => setStratCriteria(prev => ({ ...prev, minPrice: e.target.value }))}
-                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', color: '#fff' }}
+                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'var(--surface-1)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)' }}
                     />
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>~</span>
                     <input 
@@ -410,7 +410,7 @@ export default function StockFilter({
                       placeholder="最高" 
                       value={stratCriteria.maxPrice}
                       onChange={(e) => setStratCriteria(prev => ({ ...prev, maxPrice: e.target.value }))}
-                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', color: '#fff' }}
+                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'var(--surface-1)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)' }}
                     />
                   </div>
                 </div>
@@ -424,7 +424,7 @@ export default function StockFilter({
                       placeholder="最低" 
                       value={stratCriteria.minPE}
                       onChange={(e) => setStratCriteria(prev => ({ ...prev, minPE: e.target.value }))}
-                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', color: '#fff' }}
+                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'var(--surface-1)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)' }}
                     />
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>~</span>
                     <input 
@@ -432,7 +432,7 @@ export default function StockFilter({
                       placeholder="最高" 
                       value={stratCriteria.maxPE}
                       onChange={(e) => setStratCriteria(prev => ({ ...prev, maxPE: e.target.value }))}
-                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', color: '#fff' }}
+                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'var(--surface-1)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)' }}
                     />
                   </div>
                 </div>
@@ -446,7 +446,7 @@ export default function StockFilter({
                       placeholder="最低" 
                       value={stratCriteria.minPB}
                       onChange={(e) => setStratCriteria(prev => ({ ...prev, minPB: e.target.value }))}
-                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', color: '#fff' }}
+                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'var(--surface-1)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)' }}
                     />
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>~</span>
                     <input 
@@ -454,7 +454,7 @@ export default function StockFilter({
                       placeholder="最高" 
                       value={stratCriteria.maxPB}
                       onChange={(e) => setStratCriteria(prev => ({ ...prev, maxPB: e.target.value }))}
-                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', color: '#fff' }}
+                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'var(--surface-1)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)' }}
                     />
                   </div>
                 </div>
@@ -468,7 +468,7 @@ export default function StockFilter({
                       placeholder="最低" 
                       value={stratCriteria.minYield}
                       onChange={(e) => setStratCriteria(prev => ({ ...prev, minYield: e.target.value }))}
-                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', color: '#fff' }}
+                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'var(--surface-1)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)' }}
                     />
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>~</span>
                     <input 
@@ -476,7 +476,7 @@ export default function StockFilter({
                       placeholder="最高" 
                       value={stratCriteria.maxYield}
                       onChange={(e) => setStratCriteria(prev => ({ ...prev, maxYield: e.target.value }))}
-                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', color: '#fff' }}
+                      style={{ padding: '0.4rem 0.5rem', fontSize: '0.75rem', width: '100%', background: 'var(--surface-1)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)' }}
                     />
                   </div>
                 </div>

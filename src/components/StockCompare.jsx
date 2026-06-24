@@ -114,10 +114,10 @@ export default function StockCompare({
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(14, 19, 38, 0.95)',
+        backgroundColor: 'var(--panel-strong)',
         titleColor: '#f8fafc',
         bodyColor: '#cbd5e1',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'var(--surface-3)',
         borderWidth: 1,
         padding: 12,
         callbacks: {
@@ -135,7 +135,7 @@ export default function StockCompare({
         ticks: { color: '#cbd5e1', font: { size: 11, weight: 'bold' } }
       },
       y: {
-        grid: { color: 'rgba(255, 255, 255, 0.03)' },
+        grid: { color: 'var(--surface-2)' },
         ticks: { color: '#64748b', font: { size: 10 } }
       }
     }
@@ -367,7 +367,7 @@ export default function StockCompare({
                       </span>
                     </div>
                     
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.75rem', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.75rem', textAlign: 'center', borderTop: '1px solid var(--surface-2)', paddingTop: '0.5rem' }}>
                       ※ 註：此為概估配息，實際配息金額應以該公司股東會決議發放之盈餘分派為準。
                     </div>
                   </div>
@@ -393,7 +393,7 @@ export default function StockCompare({
             </h3>
             
             {/* 指標切換按鈕群 */}
-            <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--surface-2)', padding: '4px', borderRadius: '8px', border: '1px solid var(--surface-3)' }}>
               {[
                 { id: 'PE', label: '本益比 PE', color: 'var(--accent-blue)' },
                 { id: 'PB', label: '股價淨值比 PB', color: 'var(--accent-purple)' },
@@ -406,7 +406,7 @@ export default function StockCompare({
                     padding: '0.4rem 0.85rem',
                     fontSize: '0.8rem',
                     fontWeight: activeCompareMetric === metric.id ? 800 : 500,
-                    background: activeCompareMetric === metric.id ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                    background: activeCompareMetric === metric.id ? 'var(--surface-3)' : 'transparent',
                     color: activeCompareMetric === metric.id ? metric.color : 'var(--text-secondary)',
                     border: 'none',
                     borderRadius: '6px',

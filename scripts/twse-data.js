@@ -7,6 +7,21 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const STATIC_DATA_PATH = path.join(__dirname, '..', 'public', 'api', 'stocks.json');
+const COMPANY_PATH = path.join(__dirname, '..', 'public', 'api', 'company.json');
+
+function readCompanyMap() {
+  try {
+    if (!fs.existsSync(COMPANY_PATH)) return new Map();
+    const payload = JSON.parse(fs.readFileSync(COMPANY_PATH, 'utf8'));
+    const map = new Map();
+    if (payload && payload.data) {
+      for (const [code, info] of Object.entries(payload.data)) map.set(code, info);
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
 
 const STOCK_DAY_URL = 'https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL';
 const BWIBBU_URL = 'https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL';
@@ -151,10 +166,12 @@ export async function fetchTaiwanStockData() {
       bwibbuMap.set(item.Code, item);
     }
 
+    const companyMap = readCompanyMap();
     const baseItems = stockDayData
       .filter(item => item.Code && item.Name && item.Code.length <= 6)
       .map(item => {
         const bItem = bwibbuMap.get(item.Code);
+        const companyInfo = companyMap.get(item.Code);
         const closingPrice = parseNumber(item.ClosingPrice);
 
         return {
@@ -171,7 +188,8 @@ export async function fetchTaiwanStockData() {
           PEratio: bItem && bItem.PEratio !== '' ? formatNumber(bItem.PEratio) : '',
           DividendYield: bItem && bItem.DividendYield !== '' ? formatNumber(bItem.DividendYield) : '0.00',
           PBratio: bItem && bItem.PBratio !== '' ? formatNumber(bItem.PBratio) : '',
-          Category: getCategoryByCode(item.Code)
+          Category: companyInfo && companyInfo.industry ? companyInfo.industry : getCategoryByCode(item.Code),
+          CapitalYi: companyInfo && companyInfo.capitalYi != null ? companyInfo.capitalYi : null
         };
       });
     const dataDate = formatRocDate(stockDayData.find(item => item.Date)?.Date);

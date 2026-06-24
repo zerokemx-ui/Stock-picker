@@ -133,10 +133,10 @@ export default function StockCharts({ stocks, onSelectStock }) {
         display: false
       },
       tooltip: {
-        backgroundColor: 'rgba(14, 19, 38, 0.95)',
+        backgroundColor: 'var(--panel-strong)',
         titleColor: '#f8fafc',
         bodyColor: '#cbd5e1',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'var(--surface-3)',
         borderWidth: 1,
         padding: 12,
         callbacks: {
@@ -161,7 +161,7 @@ export default function StockCharts({ stocks, onSelectStock }) {
           font: { size: 12, weight: 'bold' }
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.05)',
+          color: 'var(--surface-3)',
         },
         ticks: {
           color: '#94a3b8'
@@ -175,7 +175,7 @@ export default function StockCharts({ stocks, onSelectStock }) {
           font: { size: 12, weight: 'bold' }
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.05)',
+          color: 'var(--surface-3)',
         },
         ticks: {
           color: '#94a3b8'
@@ -266,10 +266,10 @@ export default function StockCharts({ stocks, onSelectStock }) {
         display: false
       },
       tooltip: {
-        backgroundColor: 'rgba(14, 19, 38, 0.95)',
+        backgroundColor: 'var(--panel-strong)',
         titleColor: '#f8fafc',
         bodyColor: '#cbd5e1',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: 'var(--surface-3)',
         borderWidth: 1,
       }
     },
@@ -279,7 +279,7 @@ export default function StockCharts({ stocks, onSelectStock }) {
         ticks: { color: '#94a3b8' }
       },
       y: {
-        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+        grid: { color: 'var(--surface-3)' },
         ticks: { color: '#94a3b8' }
       }
     }

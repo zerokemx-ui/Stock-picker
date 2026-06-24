@@ -166,7 +166,7 @@ export default function Dashboard({
                 key={idx.symbol} 
                 className="glass-card" 
                 style={{ 
-                  background: 'rgba(255, 255, 255, 0.01)', 
+                  background: 'var(--surface-1)', 
                   padding: '1.25rem', 
                   display: 'flex', 
                   flexDirection: 'column', 
@@ -209,8 +209,8 @@ export default function Dashboard({
 
                 {/* 台股影響說明 (高對比、質感警示框) */}
                 <div style={{ 
-                  background: 'rgba(255, 255, 255, 0.02)', 
-                  border: '1px solid rgba(255, 255, 255, 0.04)', 
+                  background: 'var(--surface-1)', 
+                  border: '1px solid var(--surface-2)', 
                   borderRadius: '8px', 
                   padding: '0.65rem 0.75rem',
                   display: 'flex',
@@ -271,7 +271,7 @@ export default function Dashboard({
             <span style={{ color: 'var(--text-muted)' }}>{riseCount} 漲 / {fallCount} 跌</span>
           </div>
           {/* 進度條 */}
-          <div style={{ height: '8px', width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
+          <div style={{ height: '8px', width: '100%', background: 'var(--surface-3)', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
             <div style={{ width: `${risePct}%`, background: 'var(--stock-up)', height: '100%' }}></div>
             <div style={{ width: `${100 - risePct - fallPct}%`, background: 'var(--stock-flat)', height: '100%' }}></div>
             <div style={{ width: `${fallPct}%`, background: 'var(--stock-down)', height: '100%' }}></div>
@@ -401,7 +401,7 @@ export default function Dashboard({
       {/* CSS 局部微調以改善 hover 排行榜行效果 */}
       <style dangerouslySetInnerHTML={{__html: `
         .leader-item-row:hover {
-          background: rgba(255, 255, 255, 0.05) !important;
+          background: var(--surface-3) !important;
         }
       `}} />
       
