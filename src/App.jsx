@@ -12,7 +12,8 @@ import {
   Settings,
   Zap,
   Briefcase,
-  CalendarDays
+  CalendarDays,
+  Sun
 } from 'lucide-react';
 import { PRESET_STRATEGIES, computeIndicators } from './utils/stockUtils';
 
