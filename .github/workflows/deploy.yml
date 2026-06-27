@@ -38,23 +38,7 @@ jobs:
         run: npm run build
 
       - name: Validate Generated Stock Data
-        run: |
-          node -e "
-          const fs = require('fs');
-          const payload = JSON.parse(fs.readFileSync('public/api/stocks.json', 'utf8'));
-          if (!payload.success) throw new Error('stocks.json success=false');
-          if (payload.isFallback) throw new Error('stocks.json was generated from fallback data');
-          if (!payload.dataDate) throw new Error('stocks.json missing dataDate');
-          if (!Array.isArray(payload.data) || payload.data.length < 1000) {
-            throw new Error('stocks.json has too few rows: ' + (payload.data && payload.data.length));
-          }
-          console.log(JSON.stringify({
-            source: payload.source,
-            dataDate: payload.dataDate,
-            generatedAt: payload.generatedAt,
-            count: payload.data.length
-          }, null, 2));
-          "
+        run: npm run validate:data
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

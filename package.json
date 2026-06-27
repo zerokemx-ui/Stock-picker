@@ -6,6 +6,8 @@
   "scripts": {
     "dev:server": "node server.js",
     "build:data": "node scripts/generate-data.js",
+    "validate:data": "node scripts/validate-generated-data.js",
+    "build:app": "vite build",
     "dev": "npm run build:data && concurrently \"node server.js\" \"vite\"",
     "build": "npm run build:data && vite build",
     "preview": "vite preview"

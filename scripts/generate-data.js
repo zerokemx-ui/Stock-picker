@@ -85,7 +85,12 @@ async function fetchTaiwanStockData() {
   };
 
   try {
-    const miIndexRes = await fetch('https://www.twse.com.tw/exchangeReport/MI_INDEX?response=json&type=ALLBUT0999');
+    const miIndexRes = await fetch('https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?response=json&type=ALLBUT0999', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://www.twse.com.tw/zh/trading/historical/mi-index.html'
+      }
+    });
     if (!miIndexRes.ok) throw new Error(`MI_INDEX fetch failed with status ${miIndexRes.status}`);
     const miIndexJson = await miIndexRes.json();
 
