@@ -89,3 +89,62 @@ curl -k -s "https://125.229.218.215:614/api/stocks.json?$(date +%s)" | jq '.sour
 ```
 
 `curl -k` is only needed if the virtual host uses a self-signed certificate or an IP address certificate mismatch.
+
+## Market-Aware Live Snapshot Updater
+
+For near real-time updates without exposing a new API port, run the live updater as a long-running NAS process. It writes static JSON directly into the virtual host:
+
+```text
+/share/Projects/saas/apps/stock-picker-web/api/stocks.json
+/share/Projects/saas/apps/stock-picker-web/api/us-indices.json
+/share/Projects/saas/apps/stock-picker-web/api/market-status.json
+```
+
+The browser reads `market-status.json` and only refreshes snapshots while a market is open.
+
+Default update cadence:
+
+```text
+Taiwan market open: 15 seconds
+US market open: 60 seconds
+Markets closed: status check every 5 minutes
+```
+
+Run once for testing:
+
+```bash
+STOCK_PICKER_WEB_DIR=/share/Projects/saas/apps/stock-picker-web \
+STOCK_PICKER_LIVE_ONCE=1 \
+node /share/Projects/saas/repos/Stock-picker/scripts/nas-live-updater.js
+```
+
+Force both markets open for testing:
+
+```bash
+STOCK_PICKER_WEB_DIR=/share/Projects/saas/apps/stock-picker-web \
+STOCK_PICKER_LIVE_ONCE=1 \
+STOCK_PICKER_FORCE_MARKETS=all \
+node /share/Projects/saas/repos/Stock-picker/scripts/nas-live-updater.js
+```
+
+Run continuously:
+
+```bash
+STOCK_PICKER_WEB_DIR=/share/Projects/saas/apps/stock-picker-web \
+nohup node /share/Projects/saas/repos/Stock-picker/scripts/nas-live-updater.js >> /share/Projects/saas/repos/Stock-picker/nas-live.log 2>&1 &
+```
+
+Stop it:
+
+```bash
+ps | grep nas-live-updater
+kill <pid>
+```
+
+Holiday and early-close rules live in:
+
+```text
+config/market-calendars.json
+```
+
+Update that file when exchanges publish the next year's trading calendar.

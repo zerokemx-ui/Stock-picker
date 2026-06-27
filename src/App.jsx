@@ -313,8 +313,8 @@ export default function App() {
   };
 
   // 5. 獲取台股 API 數據
-  const fetchStocksData = async (isRefresh = false, bustStaticCache = false) => {
-    setLoading(true);
+  const fetchStocksData = async (isRefresh = false, bustStaticCache = false, silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       let response;
@@ -425,13 +425,46 @@ export default function App() {
       setError("無法取得台股資料。請稍後再試，或確認 GitHub Actions 是否已成功產生 public/api/stocks.json。");
       showToast("資料同步失敗，請稍後再試。");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     // 開啟網頁即抓取最新部署的數據（停用瀏覽器快取）
     fetchStocksData(false, true);
+  }, []);
+
+  useEffect(() => {
+    let stopped = false;
+    let timer = null;
+
+    const pollLiveSnapshot = async () => {
+      if (stopped) return;
+      let nextPollMs = 60000;
+
+      try {
+        const response = await fetch(`./api/market-status.json?_=${Date.now()}`, { cache: 'no-store' });
+        if (response.ok) {
+          const status = await response.json();
+          nextPollMs = Number(status.nextPollMs) || nextPollMs;
+          if (status.anyMarketOpen) {
+            await fetchStocksData(false, true, true);
+          }
+        }
+      } catch (error) {
+        console.warn('market-status.json refresh skipped:', error);
+      }
+
+      if (!stopped) {
+        timer = window.setTimeout(pollLiveSnapshot, Math.max(15000, Math.min(nextPollMs, 300000)));
+      }
+    };
+
+    timer = window.setTimeout(pollLiveSnapshot, 30000);
+    return () => {
+      stopped = true;
+      if (timer) window.clearTimeout(timer);
+    };
   }, []);
 
   // 延遲載入大型 history.json：只有切到 SOP 雷達分頁、或選用需歷史的策略時才載入
