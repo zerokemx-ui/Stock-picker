@@ -19,7 +19,8 @@ import {
 export default function Dashboard({ 
   stocks, 
   onSelectStock,
-  dataStatus = {}
+  dataStatus = {},
+  usIndices: officialUsIndices = []
 }) {
   // 1. 計算市場整體基本面統計
   const totalStocks = stocks.length;
@@ -94,6 +95,7 @@ export default function Dashboard({
       }
     ];
   }, [isTaiwanMarketStrong]);
+  const displayedUsIndices = Array.isArray(officialUsIndices) ? officialUsIndices : [];
 
   // 3. 計算今日排行
   const rankedStocks = [...stocks]
@@ -154,7 +156,7 @@ export default function Dashboard({
 
         {/* 4大指數卡片 Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
-          {usIndices.map(idx => {
+          {displayedUsIndices.map(idx => {
             const isUp = idx.change >= 0;
             const changeColorClass = isUp ? 'up-text' : 'down-text';
             const changeSign = isUp ? '+' : '';

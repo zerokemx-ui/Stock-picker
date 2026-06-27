@@ -95,12 +95,35 @@ function validateCompany() {
   return payload;
 }
 
+function validateUsIndices() {
+  const payload = readJson('us-indices.json');
+  assert(payload.success, 'us-indices.json success=false');
+  assert(payload.source === 'yahoo_chart', `us-indices.json unexpected source: ${payload.source}`);
+  assert(!payload.isFallback, 'us-indices.json was generated from fallback data');
+  assert(payload.dataDate, 'us-indices.json missing dataDate');
+  assert(daysBetween(payload.dataDate) <= 10, `us-indices.json dataDate is stale: ${payload.dataDate}`);
+  assert(Array.isArray(payload.data) && payload.data.length === 4, 'us-indices.json must contain four indices');
+
+  const required = new Set(['^DJI', '^GSPC', '^IXIC', '^SOX']);
+  for (const item of payload.data) {
+    assert(required.has(item.symbol), `us-indices.json unexpected symbol: ${item.symbol}`);
+    assert(Number.isFinite(Number(item.value)) && Number(item.value) > 0, `${item.symbol} value is invalid`);
+    assert(Number.isFinite(Number(item.change)), `${item.symbol} change is invalid`);
+    assert(Number.isFinite(Number(item.changeRate)), `${item.symbol} changeRate is invalid`);
+    required.delete(item.symbol);
+  }
+  assert(required.size === 0, `us-indices.json missing symbols: ${Array.from(required).join(', ')}`);
+
+  return payload;
+}
+
 try {
   const stocks = validateStocks();
   const history = validateHistory(stocks.dataDate);
   const chip = validateChip(stocks.dataDate);
   const fundamentals = validateFundamentals();
   const company = validateCompany();
+  const usIndices = validateUsIndices();
 
   console.log(JSON.stringify({
     ok: true,
@@ -133,6 +156,12 @@ try {
       source: company.source,
       generatedAt: company.generatedAt,
       count: company.count
+    },
+    usIndices: {
+      source: usIndices.source,
+      generatedAt: usIndices.generatedAt,
+      dataDate: usIndices.dataDate,
+      count: usIndices.count
     }
   }, null, 2));
 } catch (error) {

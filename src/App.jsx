@@ -53,6 +53,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [isOffline, setIsOffline] = useState(false);
   const [lastUpdated, setLastUpdated] = useState('');
+  const [usIndices, setUsIndices] = useState([]);
   const [dataStatus, setDataStatus] = useState({
     source: '',
     dataDate: '',
@@ -357,14 +358,16 @@ export default function App() {
           return null;
         };
         // 初次載入只抓輕量資料；大型 history.json 改為切到 SOP 雷達分頁時才載入
-        const [chipPayload, fundPayload, companyPayload] = await Promise.all([
+        const [chipPayload, fundPayload, companyPayload, usIndicesPayload] = await Promise.all([
           loadAux('./api/chip.json'),
           loadAux('./api/fundamentals.json'),
-          loadAux('./api/company.json')
+          loadAux('./api/company.json'),
+          loadAux('./api/us-indices.json')
         ]);
         const chipMap = chipPayload && chipPayload.data ? chipPayload.data : {};
         const fundMap = fundPayload && fundPayload.data ? fundPayload.data : {};
         const companyMap = companyPayload && companyPayload.data ? companyPayload.data : {};
+        setUsIndices(usIndicesPayload && Array.isArray(usIndicesPayload.data) ? usIndicesPayload.data : []);
         setOfficialChipData(chipMap);
         setFundamentalsData(fundMap);
         // 以真實公司資料修正產業/股本；技術指標待 history 載入後再注入
@@ -884,6 +887,7 @@ export default function App() {
                 stocks={stocks} 
                 onSelectStock={handleSelectStock} 
                 dataStatus={dataStatus}
+                usIndices={usIndices}
               />
             )}
 
