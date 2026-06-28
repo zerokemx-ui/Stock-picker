@@ -117,6 +117,27 @@ function validateUsIndices() {
   return payload;
 }
 
+function validateAsiaIndices() {
+  const payload = readJson('asia-indices.json');
+  assert(payload.success, 'asia-indices.json success=false');
+  assert(!payload.isFallback, 'asia-indices.json was generated from fallback data');
+  assert(payload.dataDate, 'asia-indices.json missing dataDate');
+  assert(daysBetween(payload.dataDate) <= 10, `asia-indices.json dataDate is stale: ${payload.dataDate}`);
+  assert(Array.isArray(payload.data) && payload.data.length === 3, 'asia-indices.json must contain TWSE, Nikkei 225 and KOSPI');
+
+  const required = new Set(['TWSE', '^N225', '^KS11']);
+  for (const item of payload.data) {
+    assert(required.has(item.symbol), `asia-indices.json unexpected symbol: ${item.symbol}`);
+    assert(Number.isFinite(Number(item.value)) && Number(item.value) > 0, `${item.symbol} value is invalid`);
+    assert(Number.isFinite(Number(item.change)), `${item.symbol} change is invalid`);
+    assert(Number.isFinite(Number(item.changeRate)), `${item.symbol} changeRate is invalid`);
+    required.delete(item.symbol);
+  }
+  assert(required.size === 0, `asia-indices.json missing symbols: ${Array.from(required).join(', ')}`);
+
+  return payload;
+}
+
 try {
   const stocks = validateStocks();
   const history = validateHistory(stocks.dataDate);
@@ -124,6 +145,7 @@ try {
   const fundamentals = validateFundamentals();
   const company = validateCompany();
   const usIndices = validateUsIndices();
+  const asiaIndices = validateAsiaIndices();
 
   console.log(JSON.stringify({
     ok: true,
@@ -162,6 +184,12 @@ try {
       generatedAt: usIndices.generatedAt,
       dataDate: usIndices.dataDate,
       count: usIndices.count
+    },
+    asiaIndices: {
+      source: asiaIndices.source,
+      generatedAt: asiaIndices.generatedAt,
+      dataDate: asiaIndices.dataDate,
+      count: asiaIndices.count
     }
   }, null, 2));
 } catch (error) {

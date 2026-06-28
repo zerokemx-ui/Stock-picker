@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "source": "yahoo_chart",
+  "generatedAt": "2026-06-28T13:21:42.023Z",
+  "dataDate": "2026-06-26",
+  "count": 4,
+  "data": [
+    {
+      "name": "Dow Jones",
+      "enName": "Dow Jones Industrial Average",
+      "symbol": "^DJI",
+      "value": 51876.11,
+      "previousClose": 51920.62,
+      "change": -44.51,
+      "changeRate": -0.09,
+      "currency": "USD",
+      "exchange": "DJI",
+      "dataDate": "2026-06-26",
+      "marketTime": "2026-06-26T13:30:00.000Z",
+      "source": "yahoo_chart"
+    },
+    {
+      "name": "S&P 500",
+      "enName": "S&P 500 Index",
+      "symbol": "^GSPC",
+      "value": 7354.02,
+      "previousClose": 7357.49,
+      "change": -3.47,
+      "changeRate": -0.05,
+      "currency": "USD",
+      "exchange": "SNP",
+      "dataDate": "2026-06-26",
+      "marketTime": "2026-06-26T13:30:00.000Z",
+      "source": "yahoo_chart"
+    },
+    {
+      "name": "Nasdaq Composite",
+      "enName": "Nasdaq Composite",
+      "symbol": "^IXIC",
+      "value": 25297.62,
+      "previousClose": 25358.6,
+      "change": -60.98,
+      "changeRate": -0.24,
+      "currency": "USD",
+      "exchange": "NIM",
+      "dataDate": "2026-06-26",
+      "marketTime": "2026-06-26T13:30:00.000Z",
+      "source": "yahoo_chart"
+    },
+    {
+      "name": "Philadelphia Semiconductor",
+      "enName": "Philadelphia Semiconductor Index",
+      "symbol": "^SOX",
+      "value": 13203.57,
+      "previousClose": 13940.87,
+      "change": -737.3,
+      "changeRate": -5.29,
+      "currency": "USD",
+      "exchange": "NIM",
+      "dataDate": "2026-06-26",
+      "marketTime": "2026-06-26T13:30:00.000Z",
+      "source": "yahoo_chart"
+    }
+  ]
+}

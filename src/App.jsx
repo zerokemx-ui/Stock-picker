@@ -1,437 +1,279 @@
-import React, { Suspense, lazy, useState, useEffect, useMemo } from 'react';
-import { 
-  Activity, 
-  Coins, 
-  BarChart3, 
-  ArrowLeftRight, 
-  Star, 
-  TrendingUp,
-  RefreshCw, 
-  AlertTriangle,
-  WifiOff,
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Activity,
+  BarChart3,
+  Bell,
+  Database,
+  Globe2,
+  Layers3,
+  RefreshCw,
+  Search,
   Settings,
-  Zap,
-  Briefcase,
-  CalendarDays,
-  Sun
+  Star,
+  Sun,
+  Moon,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Zap
 } from 'lucide-react';
-import { PRESET_STRATEGIES, computeIndicators } from './utils/stockUtils';
-
-const Dashboard = lazy(() => import('./components/Dashboard'));
-const StockFilter = lazy(() => import('./components/StockFilter'));
-const StockTable = lazy(() => import('./components/StockTable'));
-const StockCompare = lazy(() => import('./components/StockCompare'));
-const Watchlist = lazy(() => import('./components/Watchlist'));
-const StockDetail = lazy(() => import('./components/StockDetail'));
-const SOPRadar = lazy(() => import('./components/SOPRadar'));
-const Portfolio = lazy(() => import('./components/Portfolio'));
-
-const DEFAULT_FILTERS = {
-  search: '',
-  minPrice: '',
-  maxPrice: '',
-  minPE: '',
-  maxPE: '',
-  minYield: '',
-  maxYield: '',
-  minPB: '',
-  maxPB: ''
-};
+import TradingChart from './components/TradingChart.jsx';
+import { calculateChangePercent, checkSOPStrategy, computeIndicators, normalizeBars } from './utils/stockUtils';
 
 const STOCK_DATA_CACHE_KEY = 'tw_stock_last_good_snapshot';
 
-const ChunkFallback = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-    載入功能中...
-  </div>
-);
+const TABS = [
+  { id: 'overview', label: '市場總覽', icon: Globe2 },
+  { id: 'selector', label: '選股中心', icon: Target },
+  { id: 'stock', label: '個股詳情', icon: BarChart3 },
+  { id: 'watchlist', label: '觀察清單', icon: Star },
+  { id: 'status', label: '資料狀態', icon: Database }
+];
+
+const SECTOR_OPTIONS = ['半導體', '電子零組件', '電腦及週邊', '金融保險', '航運業', '其他'];
+
+function toNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function formatNumber(value, digits = 2) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '--';
+  return number.toLocaleString('zh-TW', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  });
+}
+
+function formatCompact(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '--';
+  if (number >= 100000000) return `${(number / 100000000).toFixed(1)} 億`;
+  if (number >= 10000) return `${(number / 10000).toFixed(1)} 萬`;
+  return number.toLocaleString('zh-TW');
+}
+
+function getChange(stock) {
+  const change = toNumber(stock?.Change);
+  const rate = calculateChangePercent(stock?.ClosingPrice, stock?.Change);
+  return { change, rate };
+}
+
+function toneClass(value) {
+  if (value > 0) return 'is-up';
+  if (value < 0) return 'is-down';
+  return 'is-flat';
+}
+
+function normalizeIndex(item) {
+  const change = toNumber(item.change);
+  return {
+    ...item,
+    value: toNumber(item.value),
+    change,
+    changeRate: toNumber(item.changeRate),
+    tone: toneClass(change)
+  };
+}
+
+function firstValidStock(stocks, preferredCode = '2330') {
+  return stocks.find((stock) => stock.Code === preferredCode) || stocks[0] || null;
+}
+
+function statFromStocks(stocks) {
+  let up = 0;
+  let down = 0;
+  let flat = 0;
+  let tradeValue = 0;
+
+  stocks.forEach((stock) => {
+    const change = toNumber(stock.Change);
+    if (change > 0) up += 1;
+    else if (change < 0) down += 1;
+    else flat += 1;
+    tradeValue += toNumber(stock.TradeValue);
+  });
+
+  return { up, down, flat, tradeValue };
+}
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(STOCK_DATA_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(payload) {
+  try {
+    localStorage.setItem(STOCK_DATA_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // Local cache is a convenience only.
+  }
+}
+
+function MarketCard({ item, compact = false }) {
+  return (
+    <article className={`market-card ${item.tone || ''} ${compact ? 'compact' : ''}`}>
+      <div className="market-card__head">
+        <div>
+          <div className="market-card__name">{item.name}</div>
+          <div className="market-card__symbol">{item.symbol || item.enName || item.market}</div>
+        </div>
+        <span className="market-card__badge">{item.sourceLabel || '即時快照'}</span>
+      </div>
+      <div className="market-card__value">{formatNumber(item.value)}</div>
+      <div className="market-card__change">
+        <span>{item.change >= 0 ? '+' : ''}{formatNumber(item.change)}</span>
+        <span>{item.changeRate >= 0 ? '+' : ''}{formatNumber(item.changeRate)}%</span>
+      </div>
+    </article>
+  );
+}
+
+function StockRow({ stock, active, onClick, action }) {
+  const { change, rate } = getChange(stock);
+  return (
+    <button className={`stock-row ${active ? 'active' : ''}`} type="button" onClick={onClick}>
+      <span className="stock-row__id">
+        <strong>{stock.Code}</strong>
+        <small>{stock.Name}</small>
+      </span>
+      <span className="stock-row__price">{formatNumber(stock.ClosingPrice)}</span>
+      <span className={`stock-row__change ${toneClass(change)}`}>
+        {change >= 0 ? '+' : ''}{formatNumber(rate)}%
+      </span>
+      {action}
+    </button>
+  );
+}
+
+function SectionTitle({ icon: Icon, title, meta }) {
+  return (
+    <div className="section-title">
+      <div>
+        <h2><Icon size={18} />{title}</h2>
+        {meta && <p>{meta}</p>}
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
-  // 1. 全域股票數據狀態
   const [stocks, setStocks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isOffline, setIsOffline] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState('');
+  const [historyData, setHistoryData] = useState({});
+  const [fundamentalsData, setFundamentalsData] = useState({});
+  const [chipData, setChipData] = useState({});
   const [usIndices, setUsIndices] = useState([]);
-  const [dataStatus, setDataStatus] = useState({
-    source: '',
-    dataDate: '',
-    generatedAt: '',
-    isFallback: false
+  const [asiaIndices, setAsiaIndices] = useState([]);
+  const [marketStatus, setMarketStatus] = useState(null);
+  const [dataStatus, setDataStatus] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState(() => {
+    const view = new URLSearchParams(window.location.search).get('view');
+    return TABS.some((tab) => tab.id === view) ? view : 'overview';
   });
-  const [canUseLiveApi, setCanUseLiveApi] = useState(false);
-  const [officialChipData, setOfficialChipData] = useState({});
-  const [historyData, setHistoryData] = useState({});       // 真實日線歷史 (history.json)，延遲載入
-  const [historyLoaded, setHistoryLoaded] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [fundamentalsData, setFundamentalsData] = useState({}); // 真實月營收 (fundamentals.json)
-
-  // 2. 使用者自訂狀態 (自選股與對比)
-  const [watchlist, setWatchlist] = useState(() => {
-    const saved = localStorage.getItem('tw_stock_watchlist');
-    return saved ? JSON.parse(saved) : [];
-  });
-  
-  const [compareList, setCompareList] = useState(() => {
-    const saved = localStorage.getItem('tw_stock_compare');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // 模擬投資組合狀態
-  const [portfolio, setPortfolio] = useState(() => {
-    const saved = localStorage.getItem('tw_stock_portfolio');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // 投資組合所有持股的即時盤中價格快照
-  const [portfolioLivePrices, setPortfolioLivePrices] = useState({});
-
-  // 自訂選股策略狀態
-  const [customStrategies, setCustomStrategies] = useState(() => {
-    const saved = localStorage.getItem('tw_stock_custom_strategies');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // 3. 篩選與排序狀態
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [activeStrategy, setActiveStrategy] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'ClosingPrice', direction: 'desc' });
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // 4. UI 面板控制狀態
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'table', 'compare', 'sop_radar'
-  const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
-  const [selectedStockCode, setSelectedStockCode] = useState(null);
-  const [isLargeFont, setIsLargeFont] = useState(() => {
-    return localStorage.getItem('tw_stock_large_font') === 'true';
-  });
+  const [selectedCode, setSelectedCode] = useState(() => new URLSearchParams(window.location.search).get('code') || '');
   const [theme, setTheme] = useState(() => localStorage.getItem('tw_stock_theme') || 'dark');
-
-  // GitHub Actions 手動雲端觸發狀態
-  const [githubToken, setGithubToken] = useState(() => {
-    return localStorage.getItem('tw_github_token') || '';
-  });
-  const [isGithubPanelOpen, setIsGithubPanelOpen] = useState(false);
-  const [isTriggeringAction, setIsTriggeringAction] = useState(false);
-
-  // 獲取所有獨特的產業類別
-  const categories = useMemo(() => {
-    const cats = stocks.map(s => s.Category).filter(Boolean);
-    return Array.from(new Set(cats)).sort();
-  }, [stocks]);
-
-  // 保存自選股與對比至 localStorage
-  useEffect(() => {
-    localStorage.setItem('tw_stock_watchlist', JSON.stringify(watchlist));
-  }, [watchlist]);
-
-  useEffect(() => {
-    localStorage.setItem('tw_stock_compare', JSON.stringify(compareList));
-  }, [compareList]);
-
-  useEffect(() => {
-    localStorage.setItem('tw_stock_portfolio', JSON.stringify(portfolio));
-  }, [portfolio]);
-
-  useEffect(() => {
-    localStorage.setItem('tw_stock_custom_strategies', JSON.stringify(customStrategies));
-  }, [customStrategies]);
-
-  useEffect(() => {
-    if (isLargeFont) {
-      document.documentElement.classList.add('large-font-mode');
-    } else {
-      document.documentElement.classList.remove('large-font-mode');
+  const [watchlist, setWatchlist] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('tw_stock_watchlist') || '[]');
+    } catch {
+      return [];
     }
-  }, [isLargeFont]);
+  });
+  const [search, setSearch] = useState('');
+  const [selectorMode, setSelectorMode] = useState('long');
+  const [sectorFilter, setSectorFilter] = useState('all');
+  const [maxCapital, setMaxCapital] = useState(80);
 
-  // 套用淺色 / 深色主題
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('tw_stock_theme', theme);
   }, [theme]);
 
-  // 合併預設與自訂策略
-  const allStrategies = useMemo(() => {
-    const combined = { ...PRESET_STRATEGIES };
-    customStrategies.forEach(strat => {
-      combined[strat.id] = {
-        id: strat.id,
-        name: strat.name,
-        desc: strat.desc,
-        criteriaDesc: strat.criteriaDesc,
-        isCustom: true,
-        criteria: strat.criteria,
-        filter: (stock) => {
-          const price = parseFloat(stock.ClosingPrice) || 0;
-          const pe = stock.PEratio !== '' ? parseFloat(stock.PEratio) : null;
-          const pb = stock.PBratio !== '' ? parseFloat(stock.PBratio) : null;
-          const yieldPct = parseFloat(stock.DividendYield) || 0;
+  useEffect(() => {
+    localStorage.setItem('tw_stock_watchlist', JSON.stringify(watchlist));
+  }, [watchlist]);
 
-          const c = strat.criteria;
-          if (c.minPrice && price < parseFloat(c.minPrice)) return false;
-          if (c.maxPrice && price > parseFloat(c.maxPrice)) return false;
-          if (c.minPE) {
-            if (pe === null || pe < parseFloat(c.minPE)) return false;
-          }
-          if (c.maxPE) {
-            if (pe === null || pe > parseFloat(c.maxPE)) return false;
-          }
-          if (c.minYield && yieldPct < parseFloat(c.minYield)) return false;
-          if (c.maxYield && yieldPct > parseFloat(c.maxYield)) return false;
-          if (c.minPB) {
-            if (pb === null || pb < parseFloat(c.minPB)) return false;
-          }
-          if (c.maxPB) {
-            if (pb === null || pb > parseFloat(c.maxPB)) return false;
-          }
-          return true;
-        }
-      };
-    });
-    return combined;
-  }, [customStrategies]);
-
-  // 投資組合操作 Handlers
-  const handleAddToPortfolio = (code, buyPrice, buyLots) => {
-    const targetStock = stocks.find(s => s.Code === code);
-    if (!targetStock) return;
-    
-    setPortfolio(prev => {
-      const existingIdx = prev.findIndex(item => item.code === code);
-      if (existingIdx > -1) {
-        const existing = prev[existingIdx];
-        const newLots = existing.buyLots + buyLots;
-        const newBuyPrice = ((existing.buyPrice * existing.buyLots) + (buyPrice * buyLots)) / newLots;
-        const updated = [...prev];
-        updated[existingIdx] = {
-          ...existing,
-          buyLots: newLots,
-          buyPrice: parseFloat(newBuyPrice.toFixed(2)),
-          date: new Date().toLocaleDateString('zh-TW')
-        };
-        showToast(`💼 已加碼 ${targetStock.Name}，累計持股：${newLots} 張`);
-        return updated;
-      } else {
-        showToast(`💼 已將 ${targetStock.Name} 納入模擬投資組合`);
-        return [...prev, {
-          id: code,
-          code,
-          name: targetStock.Name,
-          buyPrice: parseFloat(buyPrice),
-          buyLots: parseInt(buyLots),
-          date: new Date().toLocaleDateString('zh-TW')
-        }];
-      }
-    });
-  };
-
-  const handleRemoveFromPortfolio = (code) => {
-    setPortfolio(prev => prev.filter(item => item.code !== code));
-    showToast(`💼 已從投資組合中賣出/移除股票：${code}`);
-  };
-
-  const handleUpdatePortfolioLots = (code, delta) => {
-    setPortfolio(prev => {
-      return prev.map(item => {
-        if (item.code === code) {
-          const newLots = item.buyLots + delta;
-          if (newLots <= 0) return null;
-          return { ...item, buyLots: newLots };
-        }
-        return item;
-      }).filter(Boolean);
-    });
-  };
-
-  // 自訂策略操作 Handlers
-  const handleAddCustomStrategy = (newStrat) => {
-    setCustomStrategies(prev => [...prev, newStrat]);
-    showToast(`🛠️ 已新增自訂策略：${newStrat.name}`);
-  };
-
-  const handleDeleteCustomStrategy = (id) => {
-    setCustomStrategies(prev => prev.filter(s => s.id !== id));
-    if (activeStrategy === id) {
-      handleResetFilters();
-    }
-    showToast(`🛠️ 已刪除自訂策略`);
-  };
-
-  // 彈出 Toast 訊息輔助函式
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3000);
-  };
-
-  const triggerGithubWorkflow = async (token) => {
-    const response = await fetch('https://api.github.com/repos/zerokemx-ui/Stock-picker/actions/workflows/deploy.yml/dispatches', {
-      method: 'POST',
-      headers: {
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ ref: 'main' })
-    });
-
-    if (response.status !== 204) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP status ${response.status}`);
-    }
-  };
-
-  const queueStaticDataReload = () => {
-    window.setTimeout(() => fetchStocksData(false, true), 90000);
-  };
-
-  const fetchStaticSnapshot = (bustStaticCache = false) => {
-    const staticUrl = bustStaticCache ? `./api/stocks.json?_=${Date.now()}` : './api/stocks.json';
-    return fetch(staticUrl, { cache: bustStaticCache ? 'no-store' : 'default' });
-  };
-
-  const readCachedSnapshot = () => {
-    try {
-      const cached = localStorage.getItem(STOCK_DATA_CACHE_KEY);
-      return cached ? JSON.parse(cached) : null;
-    } catch {
+  const loadJson = async (url, required = false) => {
+    const response = await fetch(`${url}?_=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) {
+      if (required) throw new Error(`${url} HTTP ${response.status}`);
       return null;
     }
-  };
-
-  const writeCachedSnapshot = (resData) => {
-    try {
-      localStorage.setItem(STOCK_DATA_CACHE_KEY, JSON.stringify(resData));
-    } catch {
-      // Best-effort fallback cache only.
+    const text = await response.text();
+    const trimmed = text.trim();
+    if (!trimmed || (!trimmed.startsWith('{') && !trimmed.startsWith('['))) {
+      if (required) throw new Error(`${url} 不是 JSON 快照`);
+      return null;
     }
+    return JSON.parse(trimmed);
   };
 
-  // 5. 獲取台股 API 數據
-  const fetchStocksData = async (isRefresh = false, bustStaticCache = false, silent = false) => {
+  const fetchStocksData = async (silent = false) => {
     if (!silent) setLoading(true);
-    setError(null);
+    setError('');
+
     try {
-      let response;
-      let usedStaticSnapshot = false;
-      const shouldTryServerApi = import.meta.env.DEV || window.location.port === '3001';
-      
-      try {
-        // 先嘗試發送到 Express 後端伺服器 (若處於本機或 Full-stack 伺服器運行模式)
-        if (!shouldTryServerApi) {
-          throw new Error('Static hosting environment');
-        }
+      const [stockPayload, usPayload, asiaPayload, historyPayload, chipPayload, fundamentalsPayload, statusPayload] = await Promise.all([
+        loadJson('./api/stocks.json', true),
+        loadJson('./api/us-indices.json'),
+        loadJson('./api/asia-indices.json'),
+        loadJson('./api/history.json'),
+        loadJson('./api/chip.json'),
+        loadJson('./api/fundamentals.json'),
+        loadJson('./api/market-status.json')
+      ]);
 
-        if (isRefresh) {
-          response = await fetch('/api/stocks/refresh', { method: 'POST' });
-        } else {
-          response = await fetch('/api/stocks');
-        }
-        if (!response.ok) {
-          throw new Error('Express endpoint returned non-OK status');
-        }
-        setCanUseLiveApi(true);
-      } catch {
-        // 若在 GitHub Pages (Serverless) 等不支援後台運行的環境，則優雅降級讀取相對路徑下的靜態檔案
-        usedStaticSnapshot = true;
-        setCanUseLiveApi(false);
-        response = await fetchStaticSnapshot(bustStaticCache);
+      if (!stockPayload?.success || !Array.isArray(stockPayload.data)) {
+        throw new Error('stocks.json 格式不正確');
       }
 
-      if (!response.ok) {
-        throw new Error(`無法載入股票資料 (HTTP status: ${response.status})`);
-      }
-      const resData = await response.json();
-      if (resData.success && Array.isArray(resData.data)) {
-        writeCachedSnapshot(resData);
-        // 載入輔助真實資料（籌碼/歷史/基本面/公司資料），全部容錯，缺檔則自動回退
-        const loadAux = async (url) => {
-          try {
-            const r = await fetch(`${url}?_=${Date.now()}`, { cache: 'no-store' });
-            if (r.ok) return await r.json();
-          } catch (e) { /* 缺檔忽略 */ }
-          return null;
-        };
-        // 初次載入只抓輕量資料；大型 history.json 改為切到 SOP 雷達分頁時才載入
-        const [chipPayload, fundPayload, companyPayload, usIndicesPayload] = await Promise.all([
-          loadAux('./api/chip.json'),
-          loadAux('./api/fundamentals.json'),
-          loadAux('./api/company.json'),
-          loadAux('./api/us-indices.json')
-        ]);
-        const chipMap = chipPayload && chipPayload.data ? chipPayload.data : {};
-        const fundMap = fundPayload && fundPayload.data ? fundPayload.data : {};
-        const companyMap = companyPayload && companyPayload.data ? companyPayload.data : {};
-        setUsIndices(usIndicesPayload && Array.isArray(usIndicesPayload.data) ? usIndicesPayload.data : []);
-        setOfficialChipData(chipMap);
-        setFundamentalsData(fundMap);
-        // 以真實公司資料修正產業/股本；技術指標待 history 載入後再注入
-        const enriched = resData.data.map((s) => {
-          const company = companyMap[s.Code];
-          return {
-            ...s,
-            Category: company && company.industry ? company.industry : s.Category,
-            CapitalYi: company && company.capitalYi != null ? company.capitalYi : (s.CapitalYi ?? null),
-            Indicators: computeIndicators(historyData[s.Code])
-          };
-        });
-        setStocks(enriched);
-        const isFallbackData = resData.isFallback || resData.source === 'static_fallback' || resData.source === 'empty_fallback';
-        setIsOffline(isFallbackData);
-        setDataStatus({
-          source: resData.source || '',
-          dataDate: resData.dataDate || '',
-          generatedAt: resData.generatedAt || resData.timestamp || '',
-          isFallback: isFallbackData
-        });
-        
-        const displayDate = resData.dataDate
-          ? resData.dataDate
-          : new Date(resData.timestamp || resData.generatedAt).toLocaleString('zh-TW', { hour12: false });
-        setLastUpdated(displayDate);
-        
-        if (isRefresh) {
-          if (usedStaticSnapshot) {
-            const cleanToken = githubToken ? githubToken.trim() : '';
-            if (cleanToken) {
-              await triggerGithubWorkflow(cleanToken);
-              queueStaticDataReload();
-              showToast('已送出雲端同步，約 1-2 分鐘後會自動重讀最新快照。');
-            } else {
-              showToast('已重讀已發布快照。若要產生當下最新資料，請先到齒輪設定 GitHub Token。');
-            }
-          } else {
-            showToast(resData.source === 'twse_mis_live'
-              ? '已同步當下即時行情。'
-              : '已同步最新已發布行情。'
-            );
-          }
-        } else {
-          showToast(resData.source === 'twse_mis_live'
-            ? '已載入即時行情。'
-            : '已載入股票資料。'
-          );
-        }
-      } else {
-        throw new Error("股票資料結構格式不正確");
-      }
+      const historyMap = historyPayload?.data || {};
+      const enriched = stockPayload.data.map((stock) => ({
+        ...stock,
+        Indicators: computeIndicators(historyMap[stock.Code])
+      }));
+
+      writeCache(stockPayload);
+      setStocks(enriched);
+      setHistoryData(historyMap);
+      setChipData(chipPayload?.data || {});
+      setFundamentalsData(fundamentalsPayload?.data || {});
+      setUsIndices(Array.isArray(usPayload?.data) ? usPayload.data.map(normalizeIndex) : []);
+      setAsiaIndices(Array.isArray(asiaPayload?.data) ? asiaPayload.data.map(normalizeIndex) : []);
+      setMarketStatus(statusPayload || null);
+      setDataStatus({
+        source: stockPayload.source || '',
+        dataDate: stockPayload.dataDate || '',
+        generatedAt: stockPayload.generatedAt || stockPayload.timestamp || '',
+        isFallback: Boolean(stockPayload.isFallback)
+      });
+      setSelectedCode((previous) => previous || firstValidStock(enriched)?.Code || '');
     } catch (err) {
-      console.error("Fetch error:", err);
-      setError("無法取得台股資料。請稍後再試，或確認 GitHub Actions 是否已成功產生 public/api/stocks.json。");
-      showToast("資料同步失敗，請稍後再試。");
+      const cached = readCache();
+      if (cached?.data?.length) {
+        setStocks(cached.data);
+        setDataStatus({
+          source: cached.source || 'local_cache',
+          dataDate: cached.dataDate || '',
+          generatedAt: cached.generatedAt || cached.timestamp || '',
+          isFallback: true
+        });
+      }
+      setError(err.message || '資料讀取失敗');
     } finally {
       if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    // 開啟網頁即抓取最新部署的數據（停用瀏覽器快取）
-    fetchStocksData(false, true);
+    fetchStocksData();
   }, []);
 
   useEffect(() => {
@@ -443,16 +285,12 @@ export default function App() {
       let nextPollMs = 60000;
 
       try {
-        const response = await fetch(`./api/market-status.json?_=${Date.now()}`, { cache: 'no-store' });
-        if (response.ok) {
-          const status = await response.json();
-          nextPollMs = Number(status.nextPollMs) || nextPollMs;
-          if (status.anyMarketOpen) {
-            await fetchStocksData(false, true, true);
-          }
-        }
-      } catch (error) {
-        console.warn('market-status.json refresh skipped:', error);
+        const status = await loadJson('./api/market-status.json');
+        nextPollMs = Number(status?.nextPollMs) || nextPollMs;
+        setMarketStatus(status || null);
+        if (status?.anyMarketOpen) await fetchStocksData(true);
+      } catch (err) {
+        console.warn('market-status refresh skipped:', err);
       }
 
       if (!stopped) {
@@ -467,708 +305,367 @@ export default function App() {
     };
   }, []);
 
-  // 延遲載入大型 history.json：只有切到 SOP 雷達分頁、或選用需歷史的策略時才載入
-  const loadHistory = async () => {
-    if (historyLoaded || historyLoading) return;
-    setHistoryLoading(true);
-    try {
-      const r = await fetch(`./api/history.json?_=${Date.now()}`, { cache: 'no-store' });
-      if (r.ok) {
-        const payload = await r.json();
-        const historyMap = payload && payload.data ? payload.data : {};
-        setHistoryData(historyMap);
-        // 補上技術指標
-        setStocks((prev) => prev.map((s) => ({ ...s, Indicators: computeIndicators(historyMap[s.Code]) })));
-      }
-    } catch (e) {
-      console.warn('history.json 載入失敗:', e);
-    }
-    setHistoryLoaded(true);
-    setHistoryLoading(false);
-  };
+  const selectedStock = useMemo(() => {
+    return stocks.find((stock) => stock.Code === selectedCode) || firstValidStock(stocks);
+  }, [stocks, selectedCode]);
 
-  useEffect(() => {
-    const needsHistory =
-      activeTab === 'sop_radar' || activeStrategy === 'momentum' || activeStrategy === 'breakout';
-    if (needsHistory) loadHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, activeStrategy]);
+  const marketStats = useMemo(() => statFromStocks(stocks), [stocks]);
 
-  // 5.2 手動觸發 GitHub Actions 雲端工作流
-  const handleTriggerWorkflow = async () => {
-    const cleanToken = githubToken ? githubToken.trim() : '';
-    if (!cleanToken) {
-      showToast("請先輸入有效的 GitHub Token。");
-      return;
-    }
-    setIsTriggeringAction(true);
-    try {
-      await triggerGithubWorkflow(cleanToken);
-      queueStaticDataReload();
-      showToast("雲端同步指令已送出，約 1-2 分鐘後會自動重讀最新快照。");
-      setIsGithubPanelOpen(false);
-    } catch (err) {
-      console.error("觸發 Actions 失敗:", err);
-      showToast(`觸發雲端同步失敗：${err.message}`);
-    } finally {
-      setIsTriggeringAction(false);
-    }
-  };
+  const taiwanIndex = useMemo(() => {
+    const officialTaiwan = asiaIndices.find((item) => item.symbol === 'TWSE');
+    if (officialTaiwan) return { ...officialTaiwan, sourceLabel: 'TWSE 官方' };
+    const weighted = stocks.slice(0, 80).reduce((sum, stock) => sum + toNumber(stock.TradeValue) * getChange(stock).rate, 0);
+    const totalValue = stocks.slice(0, 80).reduce((sum, stock) => sum + toNumber(stock.TradeValue), 0);
+    const proxyRate = totalValue ? weighted / totalValue : 0;
+    return {
+      name: '台灣大盤',
+      symbol: 'TWSE',
+      value: null,
+      change: proxyRate,
+      changeRate: proxyRate,
+      tone: toneClass(proxyRate),
+      sourceLabel: '上市家數代理'
+    };
+  }, [stocks, asiaIndices]);
 
-  // 5.5. 批量同步模擬持股的即時價格數據 (每 15 秒自動輪詢)
-  const fetchPortfolioLivePrices = async () => {
-    if (!portfolio || portfolio.length === 0) {
-      setPortfolioLivePrices({});
-      return;
-    }
-    
-    const codes = portfolio.map(item => item.code).join(',');
-    try {
-      const response = await fetch(`/api/stocks/realtime?codes=${codes}`);
-      const resData = await response.json();
-      if (resData.success && Array.isArray(resData.data)) {
-        const priceMap = {};
-        resData.data.forEach(stock => {
-          priceMap[stock.Code] = {
-            price: parseFloat(stock.ClosingPrice),
-            change: parseFloat(stock.Change),
-            changePercent: parseFloat(stock.ChangePercent),
-            highest: parseFloat(stock.HighestPrice),
-            lowest: parseFloat(stock.LowestPrice),
-            open: parseFloat(stock.OpeningPrice),
-            volume: parseInt(stock.TradeVolume),
-            time: stock.Time,
-            isLive: true
-          };
-        });
-        setPortfolioLivePrices(priceMap);
-      }
-    } catch (err) {
-      console.error("無法同步投資組合即時報價:", err);
-    }
-  };
+  const visibleAsiaIndices = useMemo(() => {
+    const targets = new Set(['^N225', '^KS11']);
+    const live = asiaIndices.filter((item) => targets.has(item.symbol)).map((item) => ({ ...item, sourceLabel: 'Yahoo 快照' }));
+    if (live.length) return live;
+    return [
+      { name: '日經 225', symbol: '^N225', value: 0, change: 0, changeRate: 0, tone: 'is-flat', sourceLabel: '待接資料' },
+      { name: '韓國 KOSPI', symbol: '^KS11', value: 0, change: 0, changeRate: 0, tone: 'is-flat', sourceLabel: '待接資料' }
+    ];
+  }, [asiaIndices]);
 
-  const portfolioCodesString = portfolio.map(p => p.code).join(',');
-  useEffect(() => {
-    if (!canUseLiveApi) {
-      setPortfolioLivePrices({});
-      return;
-    }
+  const rankedStocks = useMemo(() => {
+    return [...stocks]
+      .map((stock) => {
+        const { change, rate } = getChange(stock);
+        return {
+          ...stock,
+          _change: change,
+          _rate: rate,
+          _tradeValue: toNumber(stock.TradeValue)
+        };
+      })
+      .sort((a, b) => b._tradeValue - a._tradeValue);
+  }, [stocks]);
 
-    fetchPortfolioLivePrices();
-    
-    const timer = setInterval(() => {
-      fetchPortfolioLivePrices();
-    }, 15000);
-    
-    return () => clearInterval(timer);
-  }, [portfolioCodesString, canUseLiveApi]);
+  const hotStocks = useMemo(() => rankedStocks.filter((stock) => stock._rate > 0).slice(0, 12), [rankedStocks]);
+  const weakStocks = useMemo(() => rankedStocks.filter((stock) => stock._rate < 0).sort((a, b) => a._rate - b._rate).slice(0, 12), [rankedStocks]);
 
-  // 6. 各種互動 Handlers
-  const handleToggleWatchlist = (code) => {
-    if (watchlist.includes(code)) {
-      setWatchlist(prev => prev.filter(c => c !== code));
-      showToast(`⭐ 已將股票 ${code} 移出自選追蹤`);
-    } else {
-      setWatchlist(prev => [...prev, code]);
-      showToast(`⭐ 已將股票 ${code} 加入自選追蹤`);
-    }
-  };
+  const selectorResults = useMemo(() => {
+    const fallbackSectors = sectorFilter === 'all' ? [] : [sectorFilter];
+    return stocks
+      .map((stock) => checkSOPStrategy(stock, fallbackSectors, {
+        maxCapital,
+        relaxKD: true,
+        radarMode: selectorMode,
+        history: historyData[stock.Code],
+        fundamentals: fundamentalsData[stock.Code],
+        chip: chipData[stock.Code],
+        capitalYi: stock.CapitalYi
+      }))
+      .filter((result) => result.passStep2 || result.passStep3)
+      .sort((a, b) => Number(b.passStep3) - Number(a.passStep3) || Math.abs(b.changeRate) - Math.abs(a.changeRate))
+      .slice(0, 80);
+  }, [stocks, selectorMode, sectorFilter, maxCapital, historyData, fundamentalsData, chipData]);
 
-  const handleToggleCompare = (code) => {
-    if (compareList.includes(code)) {
-      setCompareList(prev => prev.filter(c => c !== code));
-      showToast(`📊 已將股票 ${code} 移出對比清單`);
-    } else {
-      if (compareList.length >= 4) {
-        showToast("⚠️ 對比清單上限為 4 檔股票！請先移除其他股票");
-        return;
-      }
-      setCompareList(prev => [...prev, code]);
-      showToast(`📊 已將股票 ${code} 加入對比清單`);
-    }
-  };
-
-  const handleRemoveCompare = (code) => {
-    setCompareList(prev => prev.filter(c => c !== code));
-  };
-
-  const handleClearCompare = () => {
-    setCompareList([]);
-    showToast("📊 已清空對比清單");
-  };
-
-  const handleResetFilters = () => {
-    setFilters(DEFAULT_FILTERS);
-    setSelectedCategory('All');
-    setActiveStrategy(null);
-    setCurrentPage(1);
-    showToast("🔄 已重設所有篩選與搜尋條件");
-  };
-
-  // 當使用者在儀表板或圖表中點擊某檔股票時，自動填入搜尋並切換到表格，並開啟詳細分析彈窗
-  const handleSelectStock = (code) => {
-    setFilters(prev => ({
-      ...prev,
-      search: code
-    }));
-    setSelectedCategory('All');
-    setActiveStrategy(null);
-    setCurrentPage(1);
-    setActiveTab('table');
-    setSelectedStockCode(code);
-    showToast(`🔍 已為您定位並開啟個股分析：${code}`);
-  };
-
-  // 7. 計算多重篩選後的股票列表
   const filteredStocks = useMemo(() => {
-    let result = [...stocks];
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return rankedStocks.slice(0, 120);
+    return rankedStocks
+      .filter((stock) => `${stock.Code} ${stock.Name} ${stock.Category}`.toLowerCase().includes(keyword))
+      .slice(0, 120);
+  }, [rankedStocks, search]);
 
-    // 產業篩選
-    if (selectedCategory !== 'All') {
-      result = result.filter(s => s.Category === selectedCategory);
-    }
+  const watchedStocks = useMemo(() => watchlist
+    .map((code) => stocks.find((stock) => stock.Code === code))
+    .filter(Boolean), [watchlist, stocks]);
 
-    // 預設與自訂選股策略篩選
-    if (activeStrategy && allStrategies[activeStrategy]) {
-      const strategy = allStrategies[activeStrategy];
-      result = result.filter(strategy.filter);
-    }
+  const toggleWatchlist = (code) => {
+    setWatchlist((previous) => previous.includes(code)
+      ? previous.filter((item) => item !== code)
+      : [...previous, code]
+    );
+  };
 
-    // 進階條件範圍篩選
-    result = result.filter(s => {
-      // 搜尋關鍵字 (代號或名稱)
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const codeMatch = s.Code.toLowerCase().includes(searchLower);
-        const nameMatch = s.Name.toLowerCase().includes(searchLower);
-        if (!codeMatch && !nameMatch) return false;
-      }
+  const openStock = (code) => {
+    setSelectedCode(code);
+    setActiveTab('stock');
+  };
 
-      // 股價篩選
-      const price = parseFloat(s.ClosingPrice) || 0;
-      if (filters.minPrice && price < parseFloat(filters.minPrice)) return false;
-      if (filters.maxPrice && price > parseFloat(filters.maxPrice)) return false;
-
-      // 本益比篩選
-      const pe = s.PEratio !== '' ? parseFloat(s.PEratio) : null;
-      if (filters.minPE) {
-        if (pe === null || pe < parseFloat(filters.minPE)) return false;
-      }
-      if (filters.maxPE) {
-        if (pe === null || pe > parseFloat(filters.maxPE)) return false;
-      }
-
-      // 殖利率篩選
-      const yieldPct = parseFloat(s.DividendYield) || 0;
-      if (filters.minYield && yieldPct < parseFloat(filters.minYield)) return false;
-      if (filters.maxYield && yieldPct > parseFloat(filters.maxYield)) return false;
-
-      // 股價淨值比篩選
-      const pb = s.PBratio !== '' ? parseFloat(s.PBratio) : null;
-      if (filters.minPB) {
-        if (pb === null || pb < parseFloat(filters.minPB)) return false;
-      }
-      if (filters.maxPB) {
-        if (pb === null || pb > parseFloat(filters.maxPB)) return false;
-      }
-
-      return true;
-    });
-
-    // 進行排序
-    if (sortConfig.key) {
-      result.sort((a, b) => {
-        let valA = a[sortConfig.key];
-        let valB = b[sortConfig.key];
-
-        // 數值類別轉換為 Float 比較，避免字串排序錯誤
-        if (['ClosingPrice', 'Change', 'PEratio', 'DividendYield', 'PBratio', 'TradeVolume', 'TradeValue'].includes(sortConfig.key)) {
-          valA = valA === '' ? -Infinity : parseFloat(valA);
-          valB = valB === '' ? -Infinity : parseFloat(valB);
-        }
-
-        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-
-    return result;
-  }, [stocks, filters, selectedCategory, activeStrategy, allStrategies, sortConfig]);
-
-  // 當篩選條件變動時，重設分頁至第一頁
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters, selectedCategory, activeStrategy]);
+  const selectedBars = normalizeBars(historyData[selectedStock?.Code] || []);
+  const fallbackBars = selectedStock ? [{
+    date: dataStatus.dataDate || '',
+    open: toNumber(selectedStock.OpeningPrice, toNumber(selectedStock.ClosingPrice)),
+    high: toNumber(selectedStock.HighestPrice, toNumber(selectedStock.ClosingPrice)),
+    low: toNumber(selectedStock.LowestPrice, toNumber(selectedStock.ClosingPrice)),
+    close: toNumber(selectedStock.ClosingPrice),
+    volume: toNumber(selectedStock.TradeVolume)
+  }] : [];
+  const chartBars = selectedBars.length ? selectedBars : fallbackBars;
 
   return (
-    <div className="container">
-      
-      {/* 頂部標頭列 */}
-      <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.75rem', gap: '1rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ padding: '0.5rem', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--accent-blue)', borderRadius: '10px' }}>
-              <Activity size={28} />
-            </div>
-            <h1 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
-              <span className="text-gradient-cyan">威力台股</span>
-              <span style={{ color: 'var(--text-primary)' }}>情報站</span>
-            </h1>
-            
-            {/* 離線或備用數據狀態提示 badge */}
-            {isOffline && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '0.2rem 0.5rem', background: 'rgba(245, 158, 11, 0.15)', color: 'var(--accent-gold)', borderRadius: '4px', fontWeight: 600 }}>
-                <WifiOff size={12} /> 沿用已發布快照
-              </span>
-            )}
-          </div>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.4rem', fontWeight: 500 }}>
-            ⚡ 整合每日最新收盤行情、本益比、殖利率、股價淨值比，一鍵鎖定黃金投資機會。
-          </p>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.55rem', marginTop: '0.75rem', padding: '0.45rem 0.7rem', borderRadius: '8px', background: isOffline ? 'rgba(245, 158, 11, 0.08)' : 'rgba(56, 189, 248, 0.08)', border: isOffline ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(56, 189, 248, 0.18)', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
-            <CalendarDays size={15} style={{ color: 'var(--accent-blue)', flexShrink: 0 }} />
-            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 700 }}>行情交易日</span>
-            <strong style={{ fontSize: '0.78rem', color: 'var(--text-primary)', fontFamily: 'Outfit', letterSpacing: 0 }}>
-              {lastUpdated || '載入中'}
-            </strong>
-            <span style={{ fontSize: '0.68rem', color: isOffline ? 'var(--accent-gold)' : 'var(--accent-blue)', fontWeight: 700 }}>
-              {isOffline ? '資料源異常，未使用假行情' : 'TWSE 官方收盤資料'}
-            </span>
+    <div className="app-shell">
+      <aside className="side-rail">
+        <div className="brand-block">
+          <div className="brand-mark">SP</div>
+          <div>
+            <h1>Stock Picker</h1>
+            <p>市場監控與選股工作站</p>
           </div>
         </div>
 
-        {/* 系統功能按鈕列 (刷新、自選股抽屜切換) */}
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          
-          <button 
-            onClick={() => fetchStocksData(true)} 
-            disabled={loading}
-            className="btn-secondary" 
-            style={{ padding: '0.6rem 1rem', fontSize: '0.85rem' }}
-            title="重新整理數據"
-          >
-            <RefreshCw size={14} className={loading ? 'spin-anim' : ''} />
-            同步行情
-          </button>
+        <nav className="rail-nav">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button key={id} type="button" className={activeTab === id ? 'active' : ''} onClick={() => setActiveTab(id)}>
+              <Icon size={17} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
 
-          <button
-            onClick={() => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'))}
-            className="btn-secondary"
-            style={{ padding: '0.6rem 0.9rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-            title="切換淺色 / 深色主題"
-          >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            {theme === 'dark' ? '淺色' : '深色'}
-          </button>
-
-          <button 
-            onClick={() => {
-              setIsLargeFont(prev => {
-                const next = !prev;
-                localStorage.setItem('tw_stock_large_font', next ? 'true' : 'false');
-                showToast(next ? "👁️ 已開啟舒適大字模式，字體與對比度已為您放大調整！" : "👁️ 已恢復標準字型模式");
-                return next;
-              });
-            }}
-            className={isLargeFont ? "btn-primary" : "btn-secondary"} 
-            style={{ 
-              padding: '0.6rem 1rem', 
-              fontSize: '0.85rem', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px',
-              border: isLargeFont ? '1px solid rgba(168, 85, 247, 0.4)' : undefined,
-              background: isLargeFont ? 'linear-gradient(135deg, var(--accent-purple) 0%, #7e22ce 100%)' : undefined,
-              boxShadow: isLargeFont ? '0 4px 15px rgba(168, 85, 247, 0.3)' : undefined
-            }}
-            title="點擊切換大字型模式 (適合老花/長輩閱讀)"
-          >
-            <span style={{ fontSize: '0.95rem', fontWeight: 900 }}>A⁺</span>
-            {isLargeFont ? "舒適大字體" : "放大字體"}
-          </button>
-
-          <button 
-            onClick={() => setIsGithubPanelOpen(true)}
-            className="btn-secondary" 
-            style={{ padding: '0.6rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="設定雲端同步 (GitHub Actions)"
-          >
-            <Settings size={14} />
-          </button>
-          
-          <button 
-            onClick={() => setIsWatchlistOpen(true)}
-            className="btn-primary"
-            style={{ padding: '0.6rem 1.25rem', fontSize: '0.85rem', position: 'relative' }}
-          >
-            <Star size={14} fill="currentColor" />
-            自選追蹤
-            {watchlist.length > 0 && (
-              <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--stock-up)', color: '#fff', fontSize: '0.7rem', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: '2px solid var(--bg-primary)' }}>
-                {watchlist.length}
-              </span>
-            )}
-          </button>
-
-        </div>
-      </header>
-
-      {/* 導覽分頁 Tab 選單 */}
-      <div className="tabs-container">
-        
-        <button 
-          onClick={() => setActiveTab('dashboard')} 
-          className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-        >
-          <Activity size={16} />
-          市場總覽儀表板
-        </button>
-
-        <button 
-          onClick={() => setActiveTab('table')} 
-          className={`tab-btn ${activeTab === 'table' ? 'active' : ''}`}
-        >
-          <BarChart3 size={16} />
-          進階智慧選股
-        </button>
-
-
-        <button 
-          onClick={() => setActiveTab('compare')} 
-          className={`tab-btn ${activeTab === 'compare' ? 'active' : ''}`}
-          style={{ position: 'relative' }}
-        >
-          <ArrowLeftRight size={16} />
-          多股指標對比
-          {compareList.length > 0 && (
-            <span style={{ marginLeft: '6px', background: 'var(--accent-blue)', color: '#070a13', fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '10px', fontWeight: 'bold' }}>
-              {compareList.length}
-            </span>
-          )}
-        </button>
-
-        <button 
-          onClick={() => setActiveTab('sop_radar')} 
-          className={`tab-btn ${activeTab === 'sop_radar' ? 'active' : ''}`}
-          style={{ position: 'relative' }}
-        >
-          <Zap size={16} style={{ color: 'var(--accent-purple)' }} />
-          SOP 短線飆股雷達
-          <span className="live-badge" style={{ position: 'absolute', top: '-6px', right: '-10px', fontSize: '0.55rem', padding: '1px 4px', background: 'rgba(168, 85, 247, 0.2)', border: '1px solid rgba(168, 85, 247, 0.4)', color: 'var(--accent-purple)', borderRadius: '4px', scale: '0.8' }}>PRO</span>
-        </button>
-
-        <button 
-          onClick={() => setActiveTab('portfolio')} 
-          className={`tab-btn ${activeTab === 'portfolio' ? 'active' : ''}`}
-          style={{ position: 'relative' }}
-        >
-          <Briefcase size={16} style={{ color: 'var(--accent-blue)' }} />
-          模擬投資組合
-          {portfolio.length > 0 && (
-            <span style={{ marginLeft: '6px', background: 'var(--accent-blue)', color: '#070a13', fontSize: '0.65rem', padding: '0.1rem 0.35rem', borderRadius: '10px', fontWeight: 'bold' }}>
-              {portfolio.length}
-            </span>
-          )}
-        </button>
-
-      </div>
-
-      {/* 主畫面視窗內容渲染 */}
-      {error && !loading && (
-        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '3rem 2rem', borderLeft: '4px solid var(--stock-up)', marginBottom: '2rem' }}>
-          <AlertTriangle size={48} style={{ color: 'var(--stock-up)' }} />
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>伺服器代理連線異常</h3>
-          <p style={{ color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '600px', fontSize: '0.9rem' }}>
-            {error}
-          </p>
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-            <button onClick={() => fetchStocksData()} className="btn-primary">重試連線</button>
-            <button onClick={() => {
-              // 載入備用數據
-              fetchStocksData(false);
-            }} className="btn-secondary">重讀已發布快照</button>
+        <div className="rail-watch">
+          <div className="rail-watch__title">
+            <span>快速觀察</span>
+            <strong>{watchlist.length}</strong>
           </div>
-        </div>
-      )}
-
-      {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', padding: '6rem 0' }}>
-          <div className="spinner" style={{ width: '40px', height: '40px', borderWidth: '4px' }}></div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--accent-blue)', marginBottom: '0.25rem' }}>台股數據同步中...</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>正在由台灣證券交易所 (TWSE) 獲取並整合最新的基本面與收盤行情指標</div>
-          </div>
-          
-          {/* 漂亮的 Skeleton 模擬表格載入 */}
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '1000px', marginTop: '2rem', padding: '1rem' }}>
-            <div className="skeleton-row" style={{ height: '32px', marginBottom: '1rem', opacity: 0.5 }}></div>
-            <div className="skeleton-row"></div>
-            <div className="skeleton-row" style={{ animationDelay: '0.2s' }}></div>
-            <div className="skeleton-row" style={{ animationDelay: '0.4s' }}></div>
-          </div>
-        </div>
-      ) : (
-        !error && (
-          <div style={{ transition: 'opacity 0.2s ease' }}>
-            <Suspense fallback={<ChunkFallback />}>
-            
-            {/* Tab 1: 市場總覽儀表板 */}
-            {activeTab === 'dashboard' && (
-              <Dashboard 
-                stocks={stocks} 
-                onSelectStock={handleSelectStock} 
-                dataStatus={dataStatus}
-                usIndices={usIndices}
+          <div className="rail-watch__list">
+            {(watchedStocks.length ? watchedStocks : hotStocks.slice(0, 6)).slice(0, 8).map((stock) => (
+              <StockRow
+                key={stock.Code}
+                stock={stock}
+                active={stock.Code === selectedStock?.Code}
+                onClick={() => openStock(stock.Code)}
               />
-            )}
+            ))}
+          </div>
+        </div>
+      </aside>
 
-            {/* Tab 2: 進階篩選與表格 */}
-            {activeTab === 'table' && (
-              <>
-                <StockFilter 
-                  filters={filters} 
-                  setFilters={setFilters}
-                  activeStrategy={activeStrategy}
-                  setActiveStrategy={setActiveStrategy}
-                  onResetFilters={handleResetFilters}
-                  categories={categories}
-                  selectedCategory={selectedCategory}
-                  setSelectedCategory={setSelectedCategory}
-                  allStrategies={allStrategies}
-                  onAddCustomStrategy={handleAddCustomStrategy}
-                  onDeleteCustomStrategy={handleDeleteCustomStrategy}
-                />
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                    符合篩選條件股票：<span style={{ color: 'var(--accent-blue)', fontWeight: 700 }}>{filteredStocks.length}</span> 檔
+      <main className="workspace">
+        <header className="topbar">
+          <div className="topbar__left">
+            <div className="market-open-dot" data-open={marketStatus?.anyMarketOpen ? 'true' : 'false'} />
+            <div>
+              <strong>{marketStatus?.anyMarketOpen ? '市場開盤更新中' : '市場休市或盤後監控'}</strong>
+              <span>資料日 {dataStatus.dataDate || '--'}，產生時間 {dataStatus.generatedAt ? new Date(dataStatus.generatedAt).toLocaleString('zh-TW', { hour12: false }) : '--'}</span>
+            </div>
+          </div>
+          <div className="topbar__actions">
+            <button className="icon-button" type="button" title="重新整理" onClick={() => fetchStocksData()}>
+              <RefreshCw size={17} />
+            </button>
+            <button className="icon-button" type="button" title="切換主題" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+              {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
+            <button className="icon-button" type="button" title="資料設定" onClick={() => setActiveTab('status')}>
+              <Settings size={17} />
+            </button>
+          </div>
+        </header>
+
+        {loading ? (
+          <div className="loading-state">
+            <RefreshCw className="spin" size={30} />
+            <strong>讀取最新市場資料中</strong>
+            <span>正在載入 NAS 發布的靜態快照與即時市場狀態。</span>
+          </div>
+        ) : (
+          <>
+            {error && <div className="alert-line"><Bell size={16} />{error}，目前可能使用本機快取資料。</div>}
+
+            {activeTab === 'overview' && (
+              <section className="overview-grid">
+                <div className="hero-panel">
+                  <SectionTitle icon={Activity} title="全球市場雷達" meta="優先監控美股四大指數、台股盤面與東北亞市場。" />
+                  <div className="market-grid major">
+                    {usIndices.map((item) => <MarketCard key={item.symbol} item={item} />)}
                   </div>
-                  {activeStrategy && allStrategies[activeStrategy] && (
-                    <div style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem', background: 'rgba(168, 85, 247, 0.15)', color: 'var(--accent-purple)', borderRadius: '4px', fontWeight: 600 }}>
-                      策略啟用中：{allStrategies[activeStrategy].name}
-                    </div>
-                  )}
+                  <div className="market-grid secondary">
+                    <MarketCard item={taiwanIndex} compact />
+                    {visibleAsiaIndices.map((item) => <MarketCard key={item.symbol} item={item} compact />)}
+                  </div>
                 </div>
 
-                <StockTable 
-                  stocks={filteredStocks}
-                  watchlist={watchlist}
-                  compareList={compareList}
-                  onToggleWatchlist={handleToggleWatchlist}
-                  onToggleCompare={handleToggleCompare}
-                  sortConfig={sortConfig}
-                  setSortConfig={setSortConfig}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  onOpenDetail={handleSelectStock}
-                  enableLiveData={canUseLiveApi}
-                />
-              </>
+                <div className="breadth-panel">
+                  <SectionTitle icon={Layers3} title="台股盤面寬度" meta={`${stocks.length} 檔上市資料`} />
+                  <div className="breadth-meter">
+                    <div style={{ width: `${stocks.length ? (marketStats.up / stocks.length) * 100 : 0}%` }} className="up" />
+                    <div style={{ width: `${stocks.length ? (marketStats.flat / stocks.length) * 100 : 0}%` }} className="flat" />
+                    <div style={{ width: `${stocks.length ? (marketStats.down / stocks.length) * 100 : 0}%` }} className="down" />
+                  </div>
+                  <div className="stat-grid">
+                    <div><span>上漲</span><strong className="is-up">{marketStats.up}</strong></div>
+                    <div><span>下跌</span><strong className="is-down">{marketStats.down}</strong></div>
+                    <div><span>平盤</span><strong>{marketStats.flat}</strong></div>
+                    <div><span>成交值</span><strong>{formatCompact(marketStats.tradeValue)}</strong></div>
+                  </div>
+                </div>
+
+                <div className="list-panel">
+                  <SectionTitle icon={TrendingUp} title="短線強勢" meta="依成交值與漲幅排序" />
+                  {hotStocks.slice(0, 10).map((stock) => (
+                    <StockRow key={stock.Code} stock={stock} onClick={() => openStock(stock.Code)} />
+                  ))}
+                </div>
+
+                <div className="list-panel">
+                  <SectionTitle icon={TrendingDown} title="空方觀察" meta="跌幅與量能優先" />
+                  {weakStocks.slice(0, 10).map((stock) => (
+                    <StockRow key={stock.Code} stock={stock} onClick={() => openStock(stock.Code)} />
+                  ))}
+                </div>
+              </section>
             )}
 
+            {activeTab === 'selector' && (
+              <section className="selector-layout">
+                <div className="control-panel">
+                  <SectionTitle icon={Zap} title="選股中心" meta="合併短線雷達、進階智慧選股與手動篩選。" />
+                  <div className="segmented">
+                    <button type="button" className={selectorMode === 'long' ? 'active' : ''} onClick={() => setSelectorMode('long')}>買進候選</button>
+                    <button type="button" className={selectorMode === 'short' ? 'active' : ''} onClick={() => setSelectorMode('short')}>做空候選</button>
+                  </div>
+                  <label className="field-label">產業篩選</label>
+                  <select className="input-field" value={sectorFilter} onChange={(event) => setSectorFilter(event.target.value)}>
+                    <option value="all">全部產業</option>
+                    {SECTOR_OPTIONS.map((sector) => <option key={sector} value={sector}>{sector}</option>)}
+                  </select>
+                  <label className="field-label">最大股本：{maxCapital} 億</label>
+                  <input type="range" min="10" max="200" step="5" value={maxCapital} onChange={(event) => setMaxCapital(Number(event.target.value))} />
+                  <div className="selector-note">
+                    系統使用歷史 K 線、均線、KD、MACD、籌碼與基本面資料計算。資料不足的股票不會硬塞進結果。
+                  </div>
+                </div>
 
-            {/* Tab 4: 股票對比與計算機 */}
-            {activeTab === 'compare' && (
-              <StockCompare 
-                stocks={stocks}
-                compareList={compareList}
-                onRemoveCompare={handleRemoveCompare}
-                onClearCompare={handleClearCompare}
-              />
+                <div className="result-panel">
+                  <div className="result-panel__head">
+                    <SectionTitle icon={Target} title={selectorMode === 'long' ? '買進候選清單' : '做空候選清單'} meta={`${selectorResults.length} 檔符合技術條件`} />
+                  </div>
+                  <div className="candidate-table">
+                    {selectorResults.map((item) => (
+                      <button key={item.code} type="button" className="candidate-row" onClick={() => openStock(item.code)}>
+                        <span><strong>{item.code}</strong><small>{item.name}</small></span>
+                        <span>{item.category || '--'}</span>
+                        <span className={toneClass(item.changeRate)}>{item.changeRate >= 0 ? '+' : ''}{formatNumber(item.changeRate)}%</span>
+                        <span className={item.passStep3 ? 'signal strong' : 'signal'}>{item.passStep3 ? '進場訊號' : '趨勢成立'}</span>
+                      </button>
+                    ))}
+                    {!selectorResults.length && <div className="empty-state">目前沒有符合條件的標的。可放寬股本或切換模式。</div>}
+                  </div>
+                </div>
+              </section>
             )}
 
-            {/* Tab 5: SOP 短線飆股雷達 */}
-            {activeTab === 'sop_radar' && (
-              <SOPRadar 
-                stocks={stocks} 
-                onSelectStock={handleSelectStock} 
-                historyData={historyData}
-                fundamentalsData={fundamentalsData}
-                officialChipData={officialChipData}
-              />
+            {activeTab === 'stock' && selectedStock && (
+              <section className="stock-workbench">
+                <div className="stock-sidebar">
+                  <div className="search-box">
+                    <Search size={16} />
+                    <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜尋代號、名稱或產業" />
+                  </div>
+                  <div className="stock-scroll">
+                    {filteredStocks.map((stock) => (
+                      <StockRow
+                        key={stock.Code}
+                        stock={stock}
+                        active={stock.Code === selectedStock.Code}
+                        onClick={() => setSelectedCode(stock.Code)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="chart-desk">
+                  <div className="stock-headline">
+                    <div>
+                      <span className="stock-code-pill">{selectedStock.Code}</span>
+                      <h2>{selectedStock.Name}</h2>
+                      <p>{selectedStock.Category || '--'}，資料日 {dataStatus.dataDate || '--'}</p>
+                    </div>
+                    <div className="price-box">
+                      <strong>{formatNumber(selectedStock.ClosingPrice)}</strong>
+                      <span className={toneClass(getChange(selectedStock).change)}>
+                        {getChange(selectedStock).change >= 0 ? '+' : ''}{formatNumber(getChange(selectedStock).change)}
+                        （{getChange(selectedStock).rate >= 0 ? '+' : ''}{formatNumber(getChange(selectedStock).rate)}%）
+                      </span>
+                    </div>
+                    <button className={`watch-button ${watchlist.includes(selectedStock.Code) ? 'active' : ''}`} type="button" onClick={() => toggleWatchlist(selectedStock.Code)}>
+                      <Star size={16} fill="currentColor" />
+                      {watchlist.includes(selectedStock.Code) ? '已加入觀察' : '加入觀察'}
+                    </button>
+                  </div>
+
+                  <TradingChart bars={chartBars} title={`${selectedStock.Code} ${selectedStock.Name}`} />
+                </div>
+
+                <aside className="stock-inspector">
+                  <SectionTitle icon={Database} title="個股資訊" meta="價格、估值、量能與資料完整性" />
+                  <div className="metric-list">
+                    <div><span>開盤</span><strong>{formatNumber(selectedStock.OpeningPrice)}</strong></div>
+                    <div><span>最高</span><strong>{formatNumber(selectedStock.HighestPrice)}</strong></div>
+                    <div><span>最低</span><strong>{formatNumber(selectedStock.LowestPrice)}</strong></div>
+                    <div><span>成交量</span><strong>{formatCompact(selectedStock.TradeVolume)}</strong></div>
+                    <div><span>成交值</span><strong>{formatCompact(selectedStock.TradeValue)}</strong></div>
+                    <div><span>本益比</span><strong>{selectedStock.PEratio || '--'}</strong></div>
+                    <div><span>殖利率</span><strong>{selectedStock.DividendYield || '--'}%</strong></div>
+                    <div><span>股價淨值比</span><strong>{selectedStock.PBratio || '--'}</strong></div>
+                    <div><span>K 線資料</span><strong>{chartBars.length} 根</strong></div>
+                  </div>
+                </aside>
+              </section>
             )}
 
-            {/* Tab 6: 模擬投資組合 */}
-            {activeTab === 'portfolio' && (
-              <Portfolio 
-                stocks={stocks} 
-                onSelectStock={handleSelectStock} 
-                portfolio={portfolio}
-                portfolioLivePrices={portfolioLivePrices}
-                enableLiveData={canUseLiveApi}
-                onRemoveFromPortfolio={handleRemoveFromPortfolio}
-                onUpdatePortfolioLots={handleUpdatePortfolioLots}
-              />
+            {activeTab === 'watchlist' && (
+              <section className="watch-page">
+                <SectionTitle icon={Star} title="觀察清單" meta="保留你正在追蹤的候選標的。" />
+                <div className="watch-grid">
+                  {watchedStocks.map((stock) => <MarketLikeStockCard key={stock.Code} stock={stock} onOpen={() => openStock(stock.Code)} onRemove={() => toggleWatchlist(stock.Code)} />)}
+                  {!watchedStocks.length && <div className="empty-state">尚未加入觀察標的。可從市場總覽或個股詳情加入。</div>}
+                </div>
+              </section>
             )}
 
-            </Suspense>
-          </div>
-        )
-      )}
-
-      {/* 側邊自選股追蹤側拉抽屜 */}
-      <Suspense fallback={null}>
-        <Watchlist 
-          stocks={stocks}
-          watchlist={watchlist}
-          onRemoveWatchlist={handleToggleWatchlist}
-          isOpen={isWatchlistOpen}
-          onClose={() => setIsWatchlistOpen(false)}
-          onSelectStock={handleSelectStock}
-        />
-      </Suspense>
-
-      {/* 抽屜開啟時的半透明背景遮罩 */}
-      {isWatchlistOpen && (
-        <div 
-          onClick={() => setIsWatchlistOpen(false)}
-          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 999 }}
-        />
-      )}
-
-      {/* 個股詳細分析彈窗面板 */}
-      {selectedStockCode && (
-        <Suspense fallback={<ChunkFallback />}>
-          <StockDetail 
-            stockCode={selectedStockCode}
-            stocks={stocks}
-            watchlist={watchlist}
-            compareList={compareList}
-            portfolio={portfolio}
-            activeStrategy={activeStrategy}
-            enableLiveData={canUseLiveApi}
-            officialChipData={officialChipData}
-            historyData={historyData}
-            fundamentalsMap={fundamentalsData}
-            onAddToPortfolio={handleAddToPortfolio}
-            onToggleWatchlist={handleToggleWatchlist}
-            onToggleCompare={handleToggleCompare}
-            onClose={() => setSelectedStockCode(null)}
-          />
-        </Suspense>
-      )}
-
-      {/* 雲端更新設定彈窗 */}
-      {isGithubPanelOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
-          {/* 半透明背景遮罩 */}
-          <div 
-            onClick={() => setIsGithubPanelOpen(false)}
-            style={{ position: 'absolute', width: '100%', height: '100%', background: 'var(--panel-strong)', backdropFilter: 'blur(8px)' }}
-          />
-          
-          {/* 彈窗主體 */}
-          <div className="glass-panel" style={{ 
-            position: 'relative', 
-            width: '90%', 
-            maxWidth: '520px', 
-            maxHeight: '90vh', 
-            overflowY: 'auto',
-            background: 'var(--bg-secondary)', 
-            border: '1px solid var(--border-glass-hover)', 
-            boxShadow: '0 20px 50px rgba(0,0,0,0.6), var(--shadow-neon-blue)',
-            padding: '2rem',
-            animation: 'slide-up-fade 0.3s ease-out',
-            zIndex: 10001
-          }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="text-gradient-cyan">☁️ 雲端數據即時更新</span>
-              </h3>
-              <button 
-                onClick={() => setIsGithubPanelOpen(false)}
-                className="btn-icon"
-                style={{ fontSize: '1.2rem', padding: '0.2rem' }}
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              <p>
-                本網頁完全在您的瀏覽器（線上靜態 GitHub Pages）中運作，無須下載或安裝任何本地程式。
-              </p>
-              
-              <div style={{ padding: '0.75rem 1rem', background: 'rgba(56, 189, 248, 0.05)', borderLeft: '3px solid var(--accent-blue)', borderRadius: '4px', fontSize: '0.85rem' }}>
-                <strong>🔒 安全聲明：</strong>
-                本設定使用「個人瀏覽器儲存（localStorage）」，您的 Token 僅會直接與 GitHub API 通訊，絕對不會上傳至任何第三方伺服器，安全無輿。
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <label style={{ fontWeight: 600, color: 'var(--text-primary)' }}>步驟 1. 取得 GitHub 授權（PAT）</label>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                  請至 GitHub 生成一個存取權杖（Token），並勾選 <code>workflow</code> 權限，以允許此網頁發送更新請求。
-                </p>
-                <a 
-                  href="https://github.com/settings/tokens/new?description=Taiwan-Stock-Picker-Trigger&scopes=workflow" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ color: 'var(--accent-blue)', textDecoration: 'underline', fontSize: '0.8rem', fontWeight: 600, width: 'fit-content' }}
-                >
-                  👉 點此前往 GitHub 自動生成 Token 頁面
-                </a>
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <label htmlFor="github-token-input" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>步驟 2. 輸入您的 Token</label>
-                <input 
-                  id="github-token-input"
-                  type="password"
-                  value={githubToken}
-                  onChange={(e) => {
-                    setGithubToken(e.target.value);
-                    localStorage.setItem('tw_github_token', e.target.value);
-                  }}
-                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                  className="input-field"
-                  style={{ fontFamily: 'monospace' }}
-                />
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-                <button 
-                  onClick={handleTriggerWorkflow}
-                  disabled={!githubToken || isTriggeringAction}
-                  className="btn-primary"
-                  style={{ width: '100%', justifyContent: 'center', padding: '0.85rem', background: !githubToken ? 'var(--bg-tertiary)' : undefined, color: !githubToken ? 'var(--text-muted)' : undefined, border: !githubToken ? '1px solid var(--border-glass)' : undefined, cursor: !githubToken ? 'not-allowed' : 'pointer', boxShadow: !githubToken ? 'none' : undefined }}
-                >
-                  <RefreshCw size={16} className={isTriggeringAction ? 'spin-anim' : ''} />
-                  {isTriggeringAction ? '正在傳送雲端請求...' : '⚡ 立即強制更新雲端數據 (Actions)'}
-                </button>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
-                  * 按下後會觸發 GitHub Actions 執行盤中行情抓取，整個過程約需 1-2 分鐘。完成後重新整理網頁即可看見最新數據！
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 全域美觀微調的 Toast 懸浮通知 */}
-      {toastMessage && (
-        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: 'var(--panel-strong)', border: '1px solid rgba(56, 189, 248, 0.25)', boxShadow: '0 8px 30px rgba(0,0,0,0.5), var(--shadow-neon-blue)', padding: '0.85rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 99999, fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', animation: 'slide-up-fade 0.3s ease-out' }}>
-          {toastMessage}
-        </div>
-      )}
-
-      {/* 局部動畫效果 CSS */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .spin-anim {
-          animation: spin 1.2s linear infinite;
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes slide-up-fade {
-          0% { transform: translateY(10px); opacity: 0; }
-          100% { transform: translateY(0); opacity: 1; }
-        }
-      `}} />
-
+            {activeTab === 'status' && (
+              <section className="status-page">
+                <SectionTitle icon={Database} title="資料狀態" meta="確認網站是否正在使用最新快照。" />
+                <div className="status-grid">
+                  <div><span>資料來源</span><strong>{dataStatus.source || '--'}</strong></div>
+                  <div><span>資料日期</span><strong>{dataStatus.dataDate || '--'}</strong></div>
+                  <div><span>產生時間</span><strong>{dataStatus.generatedAt ? new Date(dataStatus.generatedAt).toLocaleString('zh-TW', { hour12: false }) : '--'}</strong></div>
+                  <div><span>台股筆數</span><strong>{stocks.length}</strong></div>
+                  <div><span>美股指數</span><strong>{usIndices.length} / 4</strong></div>
+                  <div><span>市場輪詢</span><strong>{marketStatus?.nextPollMs ? `${Math.round(marketStatus.nextPollMs / 1000)} 秒` : '--'}</strong></div>
+                  <div><span>是否開盤</span><strong>{marketStatus?.anyMarketOpen ? '是' : '否'}</strong></div>
+                  <div><span>備援狀態</span><strong>{dataStatus.isFallback ? '使用備援資料' : '正常'}</strong></div>
+                </div>
+              </section>
+            )}
+          </>
+        )}
+      </main>
     </div>
+  );
+}
+
+function MarketLikeStockCard({ stock, onOpen, onRemove }) {
+  const { change, rate } = getChange(stock);
+  return (
+    <article className="watch-card">
+      <div>
+        <span>{stock.Code}</span>
+        <h3>{stock.Name}</h3>
+        <p>{stock.Category || '--'}</p>
+      </div>
+      <strong>{formatNumber(stock.ClosingPrice)}</strong>
+      <em className={toneClass(change)}>{rate >= 0 ? '+' : ''}{formatNumber(rate)}%</em>
+      <div className="watch-card__actions">
+        <button type="button" onClick={onOpen}>查看</button>
+        <button type="button" onClick={onRemove}>移除</button>
+      </div>
+    </article>
   );
 }

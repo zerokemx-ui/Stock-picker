@@ -1,0 +1,51 @@
+{
+  "success": true,
+  "source": "twse_yahoo_chart",
+  "generatedAt": "2026-06-28T13:29:33.336Z",
+  "dataDate": "2026-06-26",
+  "count": 3,
+  "data": [
+    {
+      "name": "台灣加權",
+      "enName": "Taiwan Weighted Index",
+      "symbol": "TWSE",
+      "value": 44571.76,
+      "previousClose": null,
+      "change": -1683.5,
+      "currency": "TWD",
+      "exchange": "TWSE",
+      "dataDate": "2026-06-26",
+      "marketTime": "2026-06-28T13:29:33.307Z",
+      "changeRate": -3.64,
+      "source": "twse_mi_index"
+    },
+    {
+      "name": "日經 225",
+      "enName": "Nikkei 225",
+      "symbol": "^N225",
+      "value": 69360.88,
+      "previousClose": 72366.34,
+      "change": -3005.46,
+      "changeRate": -4.15,
+      "currency": "JPY",
+      "exchange": "OSA",
+      "dataDate": "2026-06-26",
+      "marketTime": "2026-06-26T00:00:00.000Z",
+      "source": "yahoo_chart"
+    },
+    {
+      "name": "韓國 KOSPI",
+      "enName": "KOSPI Composite",
+      "symbol": "^KS11",
+      "value": 8411.21,
+      "previousClose": 8930.3,
+      "change": -519.09,
+      "changeRate": -5.81,
+      "currency": "KRW",
+      "exchange": "KSC",
+      "dataDate": "2026-06-26",
+      "marketTime": "2026-06-26T00:00:00.000Z",
+      "source": "yahoo_chart"
+    }
+  ]
+}

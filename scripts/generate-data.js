@@ -7,6 +7,7 @@ import { backfillHistory } from './backfill-history.js';
 import { writeCompanyInfo } from './generate-company-info.js';
 import { writeFundamentals } from './generate-fundamentals.js';
 import { writeUsIndicesSnapshot } from './generate-us-indices.js';
+import { writeAsiaIndicesSnapshot } from './generate-asia-indices.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -225,6 +226,7 @@ async function run() {
   // 4. 籌碼面
   await writeChipDataSnapshot(result.dataDate);
   await writeUsIndicesSnapshot();
+  await writeAsiaIndicesSnapshot();
 }
 
 run();
