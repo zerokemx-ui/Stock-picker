@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-06-28T13:30:14.598Z",
+  "anyMarketOpen": false,
+  "nextPollMs": 300000,
+  "markets": {
+    "taiwan": {
+      "key": "taiwan",
+      "isOpen": false,
+      "reason": "weekend",
+      "localDate": "2026-06-28",
+      "timeZone": "Asia/Taipei",
+      "open": "09:00",
+      "close": "13:35",
+      "pollMs": 15000
+    },
+    "us": {
+      "key": "us",
+      "isOpen": false,
+      "reason": "weekend",
+      "localDate": "2026-06-28",
+      "timeZone": "America/New_York",
+      "open": "09:30",
+      "close": "16:05",
+      "pollMs": 60000
+    }
+  }
+}
