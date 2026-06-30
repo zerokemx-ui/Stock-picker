@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "tdcc_shareholding_twse_t86",
-  "generatedAt": "2026-06-30T10:44:27.315Z",
+  "generatedAt": "2026-06-30T11:50:11.153Z",
   "shareholding": {
     "source": "TDCC 集保股權分散表",
     "url": "https://opendata.tdcc.com.tw/getOD.ashx?id=1-5",
@@ -7624,9 +7624,9 @@
         {
           "date": "2026-06-30",
           "foreign": -33,
-          "trust": 0,
+          "trust": 1,
           "dealer": -1,
-          "netTotal": -33
+          "netTotal": -32
         }
       ]
     },
@@ -15667,9 +15667,9 @@
         {
           "date": "2026-06-30",
           "foreign": -1426,
-          "trust": -51,
+          "trust": -90,
           "dealer": 652,
-          "netTotal": -824
+          "netTotal": -863
         }
       ]
     },
@@ -16066,9 +16066,9 @@
         {
           "date": "2026-06-30",
           "foreign": -21920,
-          "trust": -5152,
+          "trust": -10161,
           "dealer": 2999,
-          "netTotal": -24074
+          "netTotal": -29083
         }
       ]
     },
@@ -17063,9 +17063,9 @@
         {
           "date": "2026-06-30",
           "foreign": -221,
-          "trust": -197,
+          "trust": -36,
           "dealer": 60,
-          "netTotal": -358
+          "netTotal": -197
         }
       ]
     },
@@ -27128,9 +27128,9 @@
         {
           "date": "2026-06-30",
           "foreign": 49062,
-          "trust": -5863,
+          "trust": -5952,
           "dealer": -3824,
-          "netTotal": 39374
+          "netTotal": 39285
         }
       ]
     },
@@ -32854,9 +32854,9 @@
         {
           "date": "2026-06-30",
           "foreign": -2966,
-          "trust": 194,
+          "trust": 450,
           "dealer": 490,
-          "netTotal": -2281
+          "netTotal": -2025
         }
       ]
     },
@@ -51683,9 +51683,9 @@
         {
           "date": "2026-06-30",
           "foreign": 1155,
-          "trust": -1,
+          "trust": -66,
           "dealer": -90,
-          "netTotal": 1064
+          "netTotal": 999
         }
       ]
     },
@@ -64785,9 +64785,9 @@
         {
           "date": "2026-06-30",
           "foreign": -147,
-          "trust": 0,
+          "trust": 70,
           "dealer": 48,
-          "netTotal": -100
+          "netTotal": -30
         }
       ]
     },
@@ -73481,9 +73481,9 @@
         {
           "date": "2026-06-30",
           "foreign": -676,
-          "trust": 102,
+          "trust": 205,
           "dealer": 297,
-          "netTotal": -277
+          "netTotal": -174
         }
       ]
     },
@@ -74891,9 +74891,9 @@
         {
           "date": "2026-06-30",
           "foreign": 7555,
-          "trust": 0,
+          "trust": 1457,
           "dealer": 846,
-          "netTotal": 8401
+          "netTotal": 9858
         }
       ]
     },
