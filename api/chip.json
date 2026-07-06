@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "tdcc_shareholding_twse_t86",
-  "generatedAt": "2026-07-06T12:13:17.959Z",
+  "generatedAt": "2026-07-06T15:54:02.778Z",
   "shareholding": {
     "source": "TDCC 集保股權分散表",
     "url": "https://opendata.tdcc.com.tw/getOD.ashx?id=1-5",
@@ -2804,7 +2804,7 @@
           "foreign": -25,
           "trust": 0,
           "dealer": 0,
-          "netTotal": -25
+          "netTotal": 0
         },
         {
           "date": "2026-07-01",
@@ -3829,9 +3829,9 @@
         {
           "date": "2026-06-30",
           "foreign": 350,
-          "trust": 0,
+          "trust": 13,
           "dealer": -13,
-          "netTotal": 337
+          "netTotal": 0
         },
         {
           "date": "2026-07-01",
@@ -4246,7 +4246,7 @@
           "foreign": 103,
           "trust": 0,
           "dealer": 0,
-          "netTotal": 0
+          "netTotal": 103
         },
         {
           "date": "2026-07-02",
@@ -12852,7 +12852,7 @@
           "foreign": 122,
           "trust": 0,
           "dealer": 0,
-          "netTotal": 0
+          "netTotal": 122
         },
         {
           "date": "2026-07-02",
@@ -12864,9 +12864,9 @@
         {
           "date": "2026-07-03",
           "foreign": 98,
-          "trust": 2,
+          "trust": 0,
           "dealer": -2,
-          "netTotal": 0
+          "netTotal": 96
         },
         {
           "date": "2026-07-06",
@@ -13326,9 +13326,9 @@
         {
           "date": "2026-06-30",
           "foreign": -5244,
-          "trust": 1207,
-          "dealer": -19,
-          "netTotal": -4056
+          "trust": 41,
+          "dealer": -18,
+          "netTotal": 0
         },
         {
           "date": "2026-07-01",
@@ -13901,9 +13901,9 @@
         {
           "date": "2026-06-30",
           "foreign": 2062,
-          "trust": 0,
+          "trust": 4,
           "dealer": 30,
-          "netTotal": 2092
+          "netTotal": 0
         },
         {
           "date": "2026-07-01",
@@ -16942,9 +16942,9 @@
         {
           "date": "2026-07-01",
           "foreign": 1176,
-          "trust": 1,
-          "dealer": 0,
-          "netTotal": 0
+          "trust": 0,
+          "dealer": -10,
+          "netTotal": 1166
         },
         {
           "date": "2026-07-02",
@@ -18505,9 +18505,9 @@
         {
           "date": "2026-07-01",
           "foreign": -163161,
-          "trust": 5268,
-          "dealer": -2895,
-          "netTotal": 0
+          "trust": -299,
+          "dealer": -8241,
+          "netTotal": -171700
         },
         {
           "date": "2026-07-02",
@@ -20761,9 +20761,9 @@
         {
           "date": "2026-07-01",
           "foreign": 573,
-          "trust": 14,
-          "dealer": 14,
-          "netTotal": 0
+          "trust": -50,
+          "dealer": 55,
+          "netTotal": 578
         },
         {
           "date": "2026-07-02",
@@ -21126,8 +21126,8 @@
           "date": "2026-06-30",
           "foreign": 433,
           "trust": 0,
-          "dealer": -2,
-          "netTotal": 431
+          "dealer": 1,
+          "netTotal": 0
         },
         {
           "date": "2026-07-01",
@@ -21926,8 +21926,8 @@
           "date": "2026-07-01",
           "foreign": -64,
           "trust": 0,
-          "dealer": 1,
-          "netTotal": 0
+          "dealer": -1,
+          "netTotal": -65
         },
         {
           "date": "2026-07-02",
@@ -23351,7 +23351,7 @@
           "foreign": 67,
           "trust": 0,
           "dealer": 0,
-          "netTotal": 0
+          "netTotal": 67
         },
         {
           "date": "2026-07-06",
@@ -28798,9 +28798,9 @@
         {
           "date": "2026-07-03",
           "foreign": 3032,
-          "trust": 5,
-          "dealer": 9,
-          "netTotal": 0
+          "trust": -632,
+          "dealer": 212,
+          "netTotal": 2612
         },
         {
           "date": "2026-07-06",
@@ -29308,9 +29308,9 @@
         {
           "date": "2026-07-01",
           "foreign": -599,
-          "trust": 20,
-          "dealer": -6,
-          "netTotal": 0
+          "trust": 0,
+          "dealer": -8,
+          "netTotal": -607
         },
         {
           "date": "2026-07-02",
@@ -30254,9 +30254,9 @@
         {
           "date": "2026-07-03",
           "foreign": 64,
-          "trust": 1,
+          "trust": 0,
           "dealer": -1,
-          "netTotal": 0
+          "netTotal": 63
         },
         {
           "date": "2026-07-06",
@@ -31137,7 +31137,7 @@
           "foreign": -26,
           "trust": 0,
           "dealer": 1,
-          "netTotal": 0
+          "netTotal": -25
         },
         {
           "date": "2026-07-02",
@@ -39214,9 +39214,9 @@
         {
           "date": "2026-07-03",
           "foreign": 18,
-          "trust": 1,
+          "trust": 0,
           "dealer": -1,
-          "netTotal": 0
+          "netTotal": 17
         },
         {
           "date": "2026-07-06",
@@ -40470,9 +40470,9 @@
         {
           "date": "2026-06-30",
           "foreign": 60,
-          "trust": 0,
+          "trust": 1,
           "dealer": -1,
-          "netTotal": 59
+          "netTotal": 0
         },
         {
           "date": "2026-07-01",
@@ -41645,9 +41645,9 @@
         {
           "date": "2026-07-03",
           "foreign": 149,
-          "trust": 3,
+          "trust": 0,
           "dealer": 0,
-          "netTotal": 0
+          "netTotal": 149
         },
         {
           "date": "2026-07-06",
@@ -42915,9 +42915,9 @@
         {
           "date": "2026-07-01",
           "foreign": 76,
-          "trust": 2,
-          "dealer": -1,
-          "netTotal": 0
+          "trust": -1,
+          "dealer": 3,
+          "netTotal": 78
         },
         {
           "date": "2026-07-02",
@@ -49332,7 +49332,7 @@
           "foreign": 17,
           "trust": 0,
           "dealer": 0,
-          "netTotal": 0
+          "netTotal": 17
         },
         {
           "date": "2026-07-02",
@@ -56414,7 +56414,7 @@
           "foreign": 3,
           "trust": 0,
           "dealer": 0,
-          "netTotal": 3
+          "netTotal": 0
         },
         {
           "date": "2026-07-01",
@@ -58532,7 +58532,7 @@
           "foreign": -7,
           "trust": 0,
           "dealer": 0,
-          "netTotal": 0
+          "netTotal": -7
         },
         {
           "date": "2026-07-02",
@@ -58981,9 +58981,9 @@
         {
           "date": "2026-07-03",
           "foreign": 834,
-          "trust": 23,
-          "dealer": 8,
-          "netTotal": 0
+          "trust": -705,
+          "dealer": 0,
+          "netTotal": 129
         },
         {
           "date": "2026-07-06",
@@ -63801,9 +63801,9 @@
         {
           "date": "2026-07-01",
           "foreign": -6,
-          "trust": 1,
+          "trust": 0,
           "dealer": -1,
-          "netTotal": 0
+          "netTotal": -7
         },
         {
           "date": "2026-07-02",
@@ -66775,8 +66775,8 @@
           "date": "2026-06-30",
           "foreign": -1,
           "trust": 0,
-          "dealer": 3,
-          "netTotal": 2
+          "dealer": 1,
+          "netTotal": 0
         },
         {
           "date": "2026-07-01",
@@ -70037,7 +70037,7 @@
           "foreign": 95,
           "trust": 0,
           "dealer": 0,
-          "netTotal": 0
+          "netTotal": 95
         },
         {
           "date": "2026-07-02",
@@ -74035,9 +74035,9 @@
         {
           "date": "2026-07-01",
           "foreign": -985,
-          "trust": 2,
-          "dealer": 139,
-          "netTotal": 0
+          "trust": 366,
+          "dealer": 132,
+          "netTotal": -488
         },
         {
           "date": "2026-07-02",
