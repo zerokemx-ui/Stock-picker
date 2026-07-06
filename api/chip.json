@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "tdcc_shareholding_twse_t86",
-  "generatedAt": "2026-07-06T15:54:02.778Z",
+  "generatedAt": "2026-07-06T17:57:46.085Z",
   "shareholding": {
     "source": "TDCC 集保股權分散表",
     "url": "https://opendata.tdcc.com.tw/getOD.ashx?id=1-5",
@@ -2804,7 +2804,7 @@
           "foreign": -25,
           "trust": 0,
           "dealer": 0,
-          "netTotal": 0
+          "netTotal": -25
         },
         {
           "date": "2026-07-01",
@@ -3829,9 +3829,9 @@
         {
           "date": "2026-06-30",
           "foreign": 350,
-          "trust": 13,
+          "trust": 0,
           "dealer": -13,
-          "netTotal": 0
+          "netTotal": 337
         },
         {
           "date": "2026-07-01",
@@ -13326,9 +13326,9 @@
         {
           "date": "2026-06-30",
           "foreign": -5244,
-          "trust": 41,
-          "dealer": -18,
-          "netTotal": 0
+          "trust": 1207,
+          "dealer": -19,
+          "netTotal": -4056
         },
         {
           "date": "2026-07-01",
@@ -13901,9 +13901,9 @@
         {
           "date": "2026-06-30",
           "foreign": 2062,
-          "trust": 4,
+          "trust": 0,
           "dealer": 30,
-          "netTotal": 0
+          "netTotal": 2092
         },
         {
           "date": "2026-07-01",
@@ -21126,8 +21126,8 @@
           "date": "2026-06-30",
           "foreign": 433,
           "trust": 0,
-          "dealer": 1,
-          "netTotal": 0
+          "dealer": -2,
+          "netTotal": 431
         },
         {
           "date": "2026-07-01",
@@ -40470,9 +40470,9 @@
         {
           "date": "2026-06-30",
           "foreign": 60,
-          "trust": 1,
+          "trust": 0,
           "dealer": -1,
-          "netTotal": 0
+          "netTotal": 59
         },
         {
           "date": "2026-07-01",
@@ -56414,7 +56414,7 @@
           "foreign": 3,
           "trust": 0,
           "dealer": 0,
-          "netTotal": 0
+          "netTotal": 3
         },
         {
           "date": "2026-07-01",
@@ -66775,8 +66775,8 @@
           "date": "2026-06-30",
           "foreign": -1,
           "trust": 0,
-          "dealer": 1,
-          "netTotal": 0
+          "dealer": 3,
+          "netTotal": 2
         },
         {
           "date": "2026-07-01",
