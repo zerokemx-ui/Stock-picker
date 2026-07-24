@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "tdcc_shareholding_twse_t86",
-  "generatedAt": "2026-07-24T11:09:37.104Z",
+  "generatedAt": "2026-07-24T14:09:11.486Z",
   "shareholding": {
     "source": "TDCC 集保股權分散表",
     "url": "https://opendata.tdcc.com.tw/getOD.ashx?id=1-5",
@@ -16103,9 +16103,9 @@
         {
           "date": "2026-07-24",
           "foreign": 2330,
-          "trust": 1689,
+          "trust": -14364,
           "dealer": 560,
-          "netTotal": 4579
+          "netTotal": -11474
         }
       ]
     },
@@ -16780,9 +16780,9 @@
         {
           "date": "2026-07-24",
           "foreign": -98,
-          "trust": 94,
+          "trust": 293,
           "dealer": 4,
-          "netTotal": 0
+          "netTotal": 199
         }
       ]
     },
@@ -17524,7 +17524,7 @@
           "foreign": 223,
           "trust": 105,
           "dealer": -58,
-          "netTotal": 271
+          "netTotal": 270
         }
       ]
     },
@@ -18046,9 +18046,9 @@
         {
           "date": "2026-07-24",
           "foreign": -357,
-          "trust": 5,
+          "trust": 3,
           "dealer": 42,
-          "netTotal": -310
+          "netTotal": -313
         }
       ]
     },
@@ -20045,9 +20045,9 @@
         {
           "date": "2026-07-24",
           "foreign": -5151,
-          "trust": 350,
+          "trust": 290,
           "dealer": -114,
-          "netTotal": -4915
+          "netTotal": -4975
         }
       ]
     },
@@ -20300,9 +20300,9 @@
         {
           "date": "2026-07-24",
           "foreign": -1898,
-          "trust": 18,
+          "trust": 59,
           "dealer": -75,
-          "netTotal": -1955
+          "netTotal": -1914
         }
       ]
     },
@@ -29313,9 +29313,9 @@
         {
           "date": "2026-07-24",
           "foreign": -517,
-          "trust": 275,
+          "trust": 659,
           "dealer": 20,
-          "netTotal": -222
+          "netTotal": 162
         }
       ]
     },
@@ -37017,9 +37017,9 @@
         {
           "date": "2026-07-24",
           "foreign": 1295,
-          "trust": -713,
+          "trust": -1123,
           "dealer": 21,
-          "netTotal": 603
+          "netTotal": 193
         }
       ]
     },
@@ -37070,7 +37070,7 @@
           "foreign": -56,
           "trust": -20,
           "dealer": 3,
-          "netTotal": -73
+          "netTotal": -72
         }
       ]
     },
@@ -39012,9 +39012,9 @@
         {
           "date": "2026-07-24",
           "foreign": -380,
-          "trust": 52,
+          "trust": 222,
           "dealer": 12,
-          "netTotal": -315
+          "netTotal": -146
         }
       ]
     },
@@ -40141,9 +40141,9 @@
         {
           "date": "2026-07-24",
           "foreign": -1656,
-          "trust": -1535,
+          "trust": -1544,
           "dealer": 227,
-          "netTotal": -2964
+          "netTotal": -2973
         }
       ]
     },
@@ -54999,9 +54999,9 @@
         {
           "date": "2026-07-24",
           "foreign": -6202,
-          "trust": 183,
+          "trust": -653,
           "dealer": -219,
-          "netTotal": -6238
+          "netTotal": -7074
         }
       ]
     },
@@ -58772,9 +58772,9 @@
         {
           "date": "2026-07-24",
           "foreign": 33,
-          "trust": -72,
+          "trust": -71,
           "dealer": -1,
-          "netTotal": -40
+          "netTotal": -39
         }
       ]
     },
@@ -61688,9 +61688,9 @@
         {
           "date": "2026-07-24",
           "foreign": 29,
-          "trust": 603,
+          "trust": 660,
           "dealer": 29,
-          "netTotal": 660
+          "netTotal": 717
         }
       ]
     },
@@ -75035,9 +75035,9 @@
         {
           "date": "2026-07-24",
           "foreign": -4297,
-          "trust": -334,
+          "trust": -2886,
           "dealer": -986,
-          "netTotal": -5617
+          "netTotal": -8169
         }
       ]
     },
