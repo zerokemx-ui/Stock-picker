@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "twse_yahoo_chart",
-  "generatedAt": "2026-07-29T09:11:40.092Z",
+  "generatedAt": "2026-07-29T10:16:18.854Z",
   "dataDate": "2026-07-29",
   "count": 3,
   "data": [
@@ -15,7 +15,7 @@
       "currency": "TWD",
       "exchange": "TWSE",
       "dataDate": "2026-07-29",
-      "marketTime": "2026-07-29T09:11:40.092Z",
+      "marketTime": "2026-07-29T10:16:18.854Z",
       "changeRate": -3.76,
       "source": "twse_mi_index"
     },
@@ -38,9 +38,9 @@
       "enName": "KOSPI Composite",
       "symbol": "^KS11",
       "value": 5663.24,
-      "previousClose": 6755.75,
-      "change": -1092.51,
-      "changeRate": -16.17,
+      "previousClose": 6023.66,
+      "change": -360.42,
+      "changeRate": -5.98,
       "currency": "KRW",
       "exchange": "KSC",
       "dataDate": "2026-07-29",

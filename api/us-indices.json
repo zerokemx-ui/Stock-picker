@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "yahoo_chart",
-  "generatedAt": "2026-07-29T09:11:39.876Z",
+  "generatedAt": "2026-07-29T10:16:18.612Z",
   "dataDate": "2026-07-28",
   "count": 4,
   "data": [
@@ -51,14 +51,14 @@
       "name": "Philadelphia Semiconductor",
       "enName": "Philadelphia Semiconductor Index",
       "symbol": "^SOX",
-      "value": 11554.88,
-      "previousClose": 12343.84,
-      "change": -788.96,
-      "changeRate": -6.39,
+      "value": 11035.68,
+      "previousClose": 11554.88,
+      "change": -519.2,
+      "changeRate": -4.49,
       "currency": "USD",
       "exchange": "NIM",
-      "dataDate": "2026-07-27",
-      "marketTime": "2026-07-27T13:30:00.000Z",
+      "dataDate": "2026-07-28",
+      "marketTime": "2026-07-28T13:30:00.000Z",
       "source": "yahoo_chart"
     }
   ]
