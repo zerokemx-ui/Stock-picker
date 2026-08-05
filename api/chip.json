@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "tdcc_shareholding_twse_t86",
-  "generatedAt": "2026-08-05T09:08:32.089Z",
+  "generatedAt": "2026-08-05T10:14:49.598Z",
   "shareholding": {
     "source": "TDCC 集保股權分散表",
     "url": "https://opendata.tdcc.com.tw/getOD.ashx?id=1-5",
