@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "tdcc_shareholding_twse_t86",
-  "generatedAt": "2026-08-05T11:27:41.058Z",
+  "generatedAt": "2026-08-05T14:30:03.025Z",
   "shareholding": {
     "source": "TDCC 集保股權分散表",
     "url": "https://opendata.tdcc.com.tw/getOD.ashx?id=1-5",
@@ -15062,9 +15062,9 @@
         {
           "date": "2026-08-05",
           "foreign": 118,
-          "trust": -73,
+          "trust": -78,
           "dealer": 221,
-          "netTotal": 265
+          "netTotal": 260
         }
       ]
     },
@@ -15521,9 +15521,9 @@
         {
           "date": "2026-08-05",
           "foreign": -8196,
-          "trust": 1007,
+          "trust": 1112,
           "dealer": -62,
-          "netTotal": -7251
+          "netTotal": -7146
         }
       ]
     },
@@ -15674,9 +15674,9 @@
         {
           "date": "2026-08-05",
           "foreign": 12251,
-          "trust": -1221,
+          "trust": -1205,
           "dealer": -1099,
-          "netTotal": 9931
+          "netTotal": 9948
         }
       ]
     },
@@ -17638,9 +17638,9 @@
         {
           "date": "2026-08-05",
           "foreign": 101,
-          "trust": -138,
+          "trust": -97,
           "dealer": -33,
-          "netTotal": -70
+          "netTotal": -29
         }
       ]
     },
@@ -20205,9 +20205,9 @@
         {
           "date": "2026-08-05",
           "foreign": 1847,
-          "trust": -12,
+          "trust": -11,
           "dealer": -192,
-          "netTotal": 1643
+          "netTotal": 1644
         }
       ]
     },
@@ -27070,9 +27070,9 @@
         {
           "date": "2026-08-05",
           "foreign": 5206,
-          "trust": -811,
+          "trust": -749,
           "dealer": -141,
-          "netTotal": 4253
+          "netTotal": 4315
         }
       ]
     },
@@ -27121,9 +27121,9 @@
         {
           "date": "2026-08-05",
           "foreign": 3166,
-          "trust": -307,
+          "trust": -632,
           "dealer": -71,
-          "netTotal": 2789
+          "netTotal": 2464
         }
       ]
     },
@@ -27274,9 +27274,9 @@
         {
           "date": "2026-08-05",
           "foreign": 514,
-          "trust": 1477,
+          "trust": 1361,
           "dealer": -677,
-          "netTotal": 1314
+          "netTotal": 1198
         }
       ]
     },
@@ -30252,9 +30252,9 @@
         {
           "date": "2026-08-05",
           "foreign": 8712,
-          "trust": 1557,
+          "trust": 1818,
           "dealer": -182,
-          "netTotal": 10087
+          "netTotal": 10348
         }
       ]
     },
@@ -30572,9 +30572,9 @@
         {
           "date": "2026-08-05",
           "foreign": -536,
-          "trust": 99,
+          "trust": 68,
           "dealer": 1,
-          "netTotal": -436
+          "netTotal": -467
         }
       ]
     },
@@ -35805,9 +35805,9 @@
         {
           "date": "2026-08-05",
           "foreign": 86,
-          "trust": -59,
+          "trust": 7,
           "dealer": -17,
-          "netTotal": 10
+          "netTotal": 76
         }
       ]
     },
@@ -38991,9 +38991,9 @@
         {
           "date": "2026-08-05",
           "foreign": -523,
-          "trust": 402,
+          "trust": 491,
           "dealer": -9,
-          "netTotal": -130
+          "netTotal": -41
         }
       ]
     },
@@ -59002,9 +59002,9 @@
         {
           "date": "2026-08-05",
           "foreign": -217,
-          "trust": -3,
+          "trust": -29,
           "dealer": 13,
-          "netTotal": -207
+          "netTotal": -233
         }
       ]
     },
@@ -61653,9 +61653,9 @@
         {
           "date": "2026-08-05",
           "foreign": 281,
-          "trust": -116,
+          "trust": -118,
           "dealer": -17,
-          "netTotal": 148
+          "netTotal": 146
         }
       ]
     },
@@ -64340,9 +64340,9 @@
         {
           "date": "2026-08-05",
           "foreign": -874,
-          "trust": 149,
+          "trust": 1049,
           "dealer": -28,
-          "netTotal": -753
+          "netTotal": 147
         }
       ]
     },
