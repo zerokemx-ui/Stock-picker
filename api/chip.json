@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "tdcc_shareholding_twse_t86",
-  "generatedAt": "2026-08-13T10:20:42.573Z",
+  "generatedAt": "2026-08-13T13:43:26.883Z",
   "shareholding": {
     "source": "TDCC 集保股權分散表",
     "url": "https://opendata.tdcc.com.tw/getOD.ashx?id=1-5",
@@ -5485,9 +5485,9 @@
         {
           "date": "2026-08-13",
           "foreign": -1734,
-          "trust": 50,
+          "trust": 112,
           "dealer": 4,
-          "netTotal": -1680
+          "netTotal": -1618
         }
       ]
     },
@@ -14962,9 +14962,9 @@
         {
           "date": "2026-08-13",
           "foreign": 1915,
-          "trust": -8829,
+          "trust": -9558,
           "dealer": 7173,
-          "netTotal": 259
+          "netTotal": -470
         }
       ]
     },
@@ -15507,9 +15507,9 @@
         {
           "date": "2026-08-13",
           "foreign": 4762,
-          "trust": 1483,
+          "trust": 1505,
           "dealer": -373,
-          "netTotal": 5872
+          "netTotal": 5894
         }
       ]
     },
@@ -15660,9 +15660,9 @@
         {
           "date": "2026-08-13",
           "foreign": 3972,
-          "trust": 737,
+          "trust": 736,
           "dealer": 93,
-          "netTotal": 4802
+          "netTotal": 4801
         }
       ]
     },
@@ -16059,9 +16059,9 @@
         {
           "date": "2026-08-13",
           "foreign": 12452,
-          "trust": -29052,
+          "trust": -29103,
           "dealer": 745,
-          "netTotal": -15855
+          "netTotal": -15906
         }
       ]
     },
@@ -20177,9 +20177,9 @@
         {
           "date": "2026-08-13",
           "foreign": 3760,
-          "trust": 10,
+          "trust": -62,
           "dealer": -130,
-          "netTotal": 3640
+          "netTotal": 3568
         }
       ]
     },
@@ -29234,9 +29234,9 @@
         {
           "date": "2026-08-13",
           "foreign": 1860,
-          "trust": 336,
+          "trust": 699,
           "dealer": 41,
-          "netTotal": 2237
+          "netTotal": 2600
         }
       ]
     },
@@ -30537,9 +30537,9 @@
         {
           "date": "2026-08-13",
           "foreign": 2032,
-          "trust": 593,
+          "trust": 595,
           "dealer": 119,
-          "netTotal": 2744
+          "netTotal": 2745
         }
       ]
     },
@@ -35886,9 +35886,9 @@
         {
           "date": "2026-08-13",
           "foreign": 845,
-          "trust": 0,
+          "trust": 348,
           "dealer": 25,
-          "netTotal": 870
+          "netTotal": 1218
         }
       ]
     },
@@ -38963,9 +38963,9 @@
         {
           "date": "2026-08-13",
           "foreign": -33,
-          "trust": -1,
+          "trust": 30,
           "dealer": 17,
-          "netTotal": -17
+          "netTotal": 14
         }
       ]
     },
@@ -58746,9 +58746,9 @@
         {
           "date": "2026-08-13",
           "foreign": 77,
-          "trust": -49,
+          "trust": -309,
           "dealer": 7,
-          "netTotal": 34
+          "netTotal": -226
         }
       ]
     },
@@ -61655,9 +61655,9 @@
         {
           "date": "2026-08-13",
           "foreign": 23,
-          "trust": -29,
+          "trust": -183,
           "dealer": 22,
-          "netTotal": 16
+          "netTotal": -138
         }
       ]
     },
@@ -70362,9 +70362,9 @@
         {
           "date": "2026-08-13",
           "foreign": 135,
-          "trust": 143,
+          "trust": 44,
           "dealer": 23,
-          "netTotal": 300
+          "netTotal": 201
         }
       ]
     },
@@ -73766,9 +73766,9 @@
         {
           "date": "2026-08-13",
           "foreign": -2552,
-          "trust": 396,
+          "trust": 703,
           "dealer": -62,
-          "netTotal": -2218
+          "netTotal": -1911
         }
       ]
     },
@@ -78762,9 +78762,9 @@
         {
           "date": "2026-08-13",
           "foreign": -688,
-          "trust": 90,
+          "trust": 418,
           "dealer": 12,
-          "netTotal": -586
+          "netTotal": -258
         }
       ]
     },
