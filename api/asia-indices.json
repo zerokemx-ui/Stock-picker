@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "twse_yahoo_chart",
-  "generatedAt": "2026-09-02T16:31:41.315Z",
+  "generatedAt": "2026-09-02T18:52:03.864Z",
   "dataDate": "2026-09-02",
   "count": 3,
   "data": [
@@ -15,7 +15,7 @@
       "currency": "TWD",
       "exchange": "TWSE",
       "dataDate": "2026-09-02",
-      "marketTime": "2026-09-02T16:31:41.315Z",
+      "marketTime": "2026-09-02T18:52:03.863Z",
       "changeRate": -1.67,
       "source": "twse_mi_index"
     },
