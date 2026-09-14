@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "twse_yahoo_chart",
-  "generatedAt": "2026-09-14T14:59:24.392Z",
+  "generatedAt": "2026-09-14T15:52:20.441Z",
   "dataDate": "2026-09-14",
   "count": 3,
   "data": [
@@ -15,7 +15,7 @@
       "currency": "TWD",
       "exchange": "TWSE",
       "dataDate": "2026-09-14",
-      "marketTime": "2026-09-14T14:59:24.392Z",
+      "marketTime": "2026-09-14T15:52:20.441Z",
       "changeRate": -0.7,
       "source": "twse_mi_index"
     },
@@ -23,28 +23,28 @@
       "name": "日經 225",
       "enName": "Nikkei 225",
       "symbol": "^N225",
-      "value": 63492.99,
-      "previousClose": 64011.34,
-      "change": -518.35,
-      "changeRate": -0.81,
+      "value": 64011.34,
+      "previousClose": 65270.95,
+      "change": -1259.61,
+      "changeRate": -1.93,
       "currency": "JPY",
       "exchange": "OSA",
-      "dataDate": "2026-09-14",
-      "marketTime": "2026-09-14T00:00:00.000Z",
+      "dataDate": "2026-09-11",
+      "marketTime": "2026-09-11T00:00:00.000Z",
       "source": "yahoo_chart"
     },
     {
       "name": "韓國 KOSPI",
       "enName": "KOSPI Composite",
       "symbol": "^KS11",
-      "value": 6684.37,
-      "previousClose": 6909.91,
-      "change": -225.54,
-      "changeRate": -3.26,
+      "value": 6909.91,
+      "previousClose": 7033.92,
+      "change": -124.01,
+      "changeRate": -1.76,
       "currency": "KRW",
       "exchange": "KSC",
-      "dataDate": "2026-09-14",
-      "marketTime": "2026-09-14T00:00:00.000Z",
+      "dataDate": "2026-09-11",
+      "marketTime": "2026-09-11T00:00:00.000Z",
       "source": "yahoo_chart"
     }
   ]
