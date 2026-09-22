@@ -1,22 +1,22 @@
 {
   "success": true,
   "source": "twse_yahoo_chart",
-  "generatedAt": "2026-09-21T20:05:55.827Z",
-  "dataDate": "2026-09-21",
+  "generatedAt": "2026-09-22T11:43:46.049Z",
+  "dataDate": "2026-09-22",
   "count": 3,
   "data": [
     {
       "name": "台灣加權",
       "enName": "Taiwan Weighted Index",
       "symbol": "TWSE",
-      "value": 47718.84,
+      "value": 47800.17,
       "previousClose": null,
-      "change": 538.09,
+      "change": 81.33,
       "currency": "TWD",
       "exchange": "TWSE",
-      "dataDate": "2026-09-21",
-      "marketTime": "2026-09-21T20:05:55.827Z",
-      "changeRate": 1.14,
+      "dataDate": "2026-09-22",
+      "marketTime": "2026-09-22T11:43:46.049Z",
+      "changeRate": 0.17,
       "source": "twse_mi_index"
     },
     {
@@ -37,14 +37,14 @@
       "name": "韓國 KOSPI",
       "enName": "KOSPI Composite",
       "symbol": "^KS11",
-      "value": 6894.23,
-      "previousClose": 6715.41,
-      "change": 178.82,
-      "changeRate": 2.66,
+      "value": 7017.91,
+      "previousClose": 7007.72,
+      "change": 10.19,
+      "changeRate": 0.15,
       "currency": "KRW",
       "exchange": "KSC",
-      "dataDate": "2026-09-18",
-      "marketTime": "2026-09-18T00:00:00.000Z",
+      "dataDate": "2026-09-22",
+      "marketTime": "2026-09-22T00:00:00.000Z",
       "source": "yahoo_chart"
     }
   ]
