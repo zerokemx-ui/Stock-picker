@@ -2,8 +2,8 @@
   "success": true,
   "source": "twse_mi_index",
   "dataDate": "2026-09-24",
-  "generatedAt": "2026-09-25T19:26:54.341Z",
-  "timestamp": "2026-09-25T19:26:54.341Z",
+  "generatedAt": "2026-09-28T14:01:12.265Z",
+  "timestamp": "2026-09-28T14:01:12.265Z",
   "isFallback": false,
   "count": 1364,
   "data": [
@@ -18280,7 +18280,7 @@
       "DividendYield": "3.41",
       "PBratio": "1.06",
       "Category": "35",
-      "CapitalYi": 16.79
+      "CapitalYi": 16.49
     },
     {
       "Code": "9136",
