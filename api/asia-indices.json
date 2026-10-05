@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "twse_yahoo_chart",
-  "generatedAt": "2026-10-05T14:46:54.178Z",
+  "generatedAt": "2026-10-05T16:22:01.119Z",
   "dataDate": "2026-10-05",
   "count": 3,
   "data": [
@@ -15,7 +15,7 @@
       "currency": "TWD",
       "exchange": "TWSE",
       "dataDate": "2026-10-05",
-      "marketTime": "2026-10-05T14:46:54.178Z",
+      "marketTime": "2026-10-05T16:22:01.119Z",
       "changeRate": 2.55,
       "source": "twse_mi_index"
     },
@@ -23,14 +23,14 @@
       "name": "日經 225",
       "enName": "Nikkei 225",
       "symbol": "^N225",
-      "value": 69946.86,
-      "previousClose": 68309.46,
-      "change": 1637.4,
-      "changeRate": 2.4,
+      "value": 68309.46,
+      "previousClose": 68956.72,
+      "change": -647.26,
+      "changeRate": -0.94,
       "currency": "JPY",
       "exchange": "OSA",
-      "dataDate": "2026-10-05",
-      "marketTime": "2026-10-05T00:00:00.000Z",
+      "dataDate": "2026-10-02",
+      "marketTime": "2026-10-02T00:00:00.000Z",
       "source": "yahoo_chart"
     },
     {
