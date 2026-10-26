@@ -2,8 +2,8 @@
   "success": true,
   "source": "twse_mi_index",
   "dataDate": "2026-10-22",
-  "generatedAt": "2026-10-23T19:28:08.075Z",
-  "timestamp": "2026-10-23T19:28:08.075Z",
+  "generatedAt": "2026-10-26T13:09:29.738Z",
+  "timestamp": "2026-10-26T13:09:29.738Z",
   "isFallback": false,
   "count": 1368,
   "data": [
@@ -10324,7 +10324,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.16",
       "Category": "20",
-      "CapitalYi": 85.34
+      "CapitalYi": 85.39
     },
     {
       "Code": "1310",
@@ -21085,7 +21085,7 @@
       "DividendYield": "0.93",
       "PBratio": "0.76",
       "Category": "14",
-      "CapitalYi": 11.12
+      "CapitalYi": 12.01
     },
     {
       "Code": "6722",
