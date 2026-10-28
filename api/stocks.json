@@ -2,8 +2,8 @@
   "success": true,
   "source": "twse_mi_index",
   "dataDate": "2026-10-28",
-  "generatedAt": "2026-10-28T14:28:39.824Z",
-  "timestamp": "2026-10-28T14:28:39.824Z",
+  "generatedAt": "2026-10-28T15:03:28.053Z",
+  "timestamp": "2026-10-28T15:03:28.053Z",
   "isFallback": false,
   "count": 1378,
   "data": [
@@ -39,7 +39,7 @@
       "DividendYield": "1.35",
       "PBratio": "14.90",
       "Category": "24",
-      "CapitalYi": 160.39
+      "CapitalYi": 160.5
     },
     {
       "Code": "1303",
@@ -73,7 +73,7 @@
       "DividendYield": "0.19",
       "PBratio": "13.61",
       "Category": "28",
-      "CapitalYi": 158.89
+      "CapitalYi": 164.13
     },
     {
       "Code": "2408",
@@ -158,7 +158,7 @@
       "DividendYield": "1.15",
       "PBratio": "6.06",
       "Category": "28",
-      "CapitalYi": 51.79
+      "CapitalYi": 51.58
     },
     {
       "Code": "3711",
@@ -175,7 +175,7 @@
       "DividendYield": "1.01",
       "PBratio": "7.36",
       "Category": "24",
-      "CapitalYi": 446.08
+      "CapitalYi": 448.81
     },
     {
       "Code": "3653",
@@ -192,7 +192,7 @@
       "DividendYield": "0.37",
       "PBratio": "36.47",
       "Category": "28",
-      "CapitalYi": 14.67
+      "CapitalYi": 14.72
     },
     {
       "Code": "8046",
@@ -277,7 +277,7 @@
       "DividendYield": "0.00",
       "PBratio": "2.54",
       "Category": "24",
-      "CapitalYi": 466.38
+      "CapitalYi": 471.21
     },
     {
       "Code": "2308",
@@ -311,7 +311,7 @@
       "DividendYield": "2.13",
       "PBratio": "3.46",
       "Category": "24",
-      "CapitalYi": 1257.7
+      "CapitalYi": 1257.01
     },
     {
       "Code": "4958",
@@ -328,7 +328,7 @@
       "DividendYield": "0.66",
       "PBratio": "3.74",
       "Category": "28",
-      "CapitalYi": 107.94
+      "CapitalYi": 113.34
     },
     {
       "Code": "2317",
@@ -345,7 +345,7 @@
       "DividendYield": "2.90",
       "PBratio": "1.82",
       "Category": "31",
-      "CapitalYi": 1402.86
+      "CapitalYi": 1407.57
     },
     {
       "Code": "2492",
@@ -396,7 +396,7 @@
       "DividendYield": "0.00",
       "PBratio": "3.29",
       "Category": "24",
-      "CapitalYi": 198.13
+      "CapitalYi": 198.19
     },
     {
       "Code": "2368",
@@ -413,7 +413,7 @@
       "DividendYield": "0.91",
       "PBratio": "13.25",
       "Category": "28",
-      "CapitalYi": 51.7
+      "CapitalYi": 53.06
     },
     {
       "Code": "2360",
@@ -464,7 +464,7 @@
       "DividendYield": "8.42",
       "PBratio": "2.65",
       "Category": "25",
-      "CapitalYi": 18.58
+      "CapitalYi": 56.02
     },
     {
       "Code": "3406",
@@ -498,7 +498,7 @@
       "DividendYield": "0.93",
       "PBratio": "4.99",
       "Category": "24",
-      "CapitalYi": 8.22
+      "CapitalYi": 8.63
     },
     {
       "Code": "3017",
@@ -515,7 +515,7 @@
       "DividendYield": "0.67",
       "PBratio": "22.27",
       "Category": "25",
-      "CapitalYi": 39.25
+      "CapitalYi": 39.27
     },
     {
       "Code": "3665",
@@ -532,7 +532,7 @@
       "DividendYield": "0.87",
       "PBratio": "6.83",
       "Category": "31",
-      "CapitalYi": 19.51
+      "CapitalYi": 19.96
     },
     {
       "Code": "3231",
@@ -549,7 +549,7 @@
       "DividendYield": "2.89",
       "PBratio": "3.12",
       "Category": "25",
-      "CapitalYi": 318.04
+      "CapitalYi": 342.98
     },
     {
       "Code": "0050",
@@ -600,7 +600,7 @@
       "DividendYield": "0.31",
       "PBratio": "26.60",
       "Category": "05",
-      "CapitalYi": 9.34
+      "CapitalYi": 9.35
     },
     {
       "Code": "6269",
@@ -668,7 +668,7 @@
       "DividendYield": "0.56",
       "PBratio": "23.59",
       "Category": "27",
-      "CapitalYi": 18.49
+      "CapitalYi": 18.7
     },
     {
       "Code": "8039",
@@ -685,7 +685,7 @@
       "DividendYield": "0.78",
       "PBratio": "6.02",
       "Category": "28",
-      "CapitalYi": 26.37
+      "CapitalYi": 26.38
     },
     {
       "Code": "00631L",
@@ -736,7 +736,7 @@
       "DividendYield": "0.63",
       "PBratio": "9.06",
       "Category": "28",
-      "CapitalYi": 7.14
+      "CapitalYi": 8.23
     },
     {
       "Code": "6239",
@@ -770,7 +770,7 @@
       "DividendYield": "0.53",
       "PBratio": "4.62",
       "Category": "26",
-      "CapitalYi": 18.05
+      "CapitalYi": 18.19
     },
     {
       "Code": "6415",
@@ -787,7 +787,7 @@
       "DividendYield": "0.53",
       "PBratio": "4.60",
       "Category": "24",
-      "CapitalYi": 9.72
+      "CapitalYi": 9.76
     },
     {
       "Code": "3481",
@@ -821,7 +821,7 @@
       "DividendYield": "4.76",
       "PBratio": "5.18",
       "Category": "25",
-      "CapitalYi": 386.26
+      "CapitalYi": 410.76
     },
     {
       "Code": "4526",
@@ -872,7 +872,7 @@
       "DividendYield": "0.56",
       "PBratio": "5.25",
       "Category": "24",
-      "CapitalYi": 122.27
+      "CapitalYi": 128.39
     },
     {
       "Code": "00406A",
@@ -957,7 +957,7 @@
       "DividendYield": "0.86",
       "PBratio": "10.57",
       "Category": "24",
-      "CapitalYi": 8.14
+      "CapitalYi": 8.16
     },
     {
       "Code": "7769",
@@ -1008,7 +1008,7 @@
       "DividendYield": "1.30",
       "PBratio": "5.30",
       "Category": "28",
-      "CapitalYi": 119.18
+      "CapitalYi": 123.38
     },
     {
       "Code": "6505",
@@ -1059,7 +1059,7 @@
       "DividendYield": "0.27",
       "PBratio": "6.72",
       "Category": "31",
-      "CapitalYi": 20.64
+      "CapitalYi": 22.74
     },
     {
       "Code": "2882",
@@ -1127,7 +1127,7 @@
       "DividendYield": "0.59",
       "PBratio": "13.73",
       "Category": "05",
-      "CapitalYi": 14.89
+      "CapitalYi": 15.03
     },
     {
       "Code": "6515",
@@ -1144,7 +1144,7 @@
       "DividendYield": "1.04",
       "PBratio": "20.19",
       "Category": "24",
-      "CapitalYi": 3.6
+      "CapitalYi": 3.64
     },
     {
       "Code": "8021",
@@ -1161,7 +1161,7 @@
       "DividendYield": "0.45",
       "PBratio": "10.10",
       "Category": "31",
-      "CapitalYi": 14.5
+      "CapitalYi": 14.71
     },
     {
       "Code": "3532",
@@ -1195,7 +1195,7 @@
       "DividendYield": "3.33",
       "PBratio": "2.14",
       "Category": "17",
-      "CapitalYi": 2017.69
+      "CapitalYi": 2017.59
     },
     {
       "Code": "4967",
@@ -1212,7 +1212,7 @@
       "DividendYield": "3.27",
       "PBratio": "2.01",
       "Category": "24",
-      "CapitalYi": 8.5
+      "CapitalYi": 9.86
     },
     {
       "Code": "3450",
@@ -1297,7 +1297,7 @@
       "DividendYield": "0.36",
       "PBratio": "7.69",
       "Category": "24",
-      "CapitalYi": 28.85
+      "CapitalYi": 29.33
     },
     {
       "Code": "2881",
@@ -1365,7 +1365,7 @@
       "DividendYield": "1.01",
       "PBratio": "3.06",
       "Category": "28",
-      "CapitalYi": 17.47
+      "CapitalYi": 17.53
     },
     {
       "Code": "2395",
@@ -1382,7 +1382,7 @@
       "DividendYield": "1.62",
       "PBratio": "10.79",
       "Category": "25",
-      "CapitalYi": 86.83
+      "CapitalYi": 86.9
     },
     {
       "Code": "00919",
@@ -1433,7 +1433,7 @@
       "DividendYield": "3.01",
       "PBratio": "2.55",
       "Category": "17",
-      "CapitalYi": 1333.11
+      "CapitalYi": 1386.44
     },
     {
       "Code": "3045",
@@ -1450,7 +1450,7 @@
       "DividendYield": "3.52",
       "PBratio": "4.87",
       "Category": "27",
-      "CapitalYi": 372.33
+      "CapitalYi": 372.34
     },
     {
       "Code": "2356",
@@ -1535,7 +1535,7 @@
       "DividendYield": "2.83",
       "PBratio": "2.84",
       "Category": "17",
-      "CapitalYi": 1617.4
+      "CapitalYi": 1772.35
     },
     {
       "Code": "3034",
@@ -1552,7 +1552,7 @@
       "DividendYield": "3.84",
       "PBratio": "5.29",
       "Category": "24",
-      "CapitalYi": 60.85
+      "CapitalYi": 61.15
     },
     {
       "Code": "4977",
@@ -1569,7 +1569,7 @@
       "DividendYield": "1.28",
       "PBratio": "3.27",
       "Category": "27",
-      "CapitalYi": 8.27
+      "CapitalYi": 9.1
     },
     {
       "Code": "2883",
@@ -1586,7 +1586,7 @@
       "DividendYield": "2.60",
       "PBratio": "1.52",
       "Category": "17",
-      "CapitalYi": 1855.7
+      "CapitalYi": 1855.68
     },
     {
       "Code": "2377",
@@ -1620,7 +1620,7 @@
       "DividendYield": "3.82",
       "PBratio": "1.36",
       "Category": "25",
-      "CapitalYi": 268.2
+      "CapitalYi": 267.57
     },
     {
       "Code": "6446",
@@ -1637,7 +1637,7 @@
       "DividendYield": "0.22",
       "PBratio": "12.08",
       "Category": "22",
-      "CapitalYi": 38.16
+      "CapitalYi": 42.24
     },
     {
       "Code": "4720",
@@ -1671,7 +1671,7 @@
       "DividendYield": "0.82",
       "PBratio": "8.29",
       "Category": "27",
-      "CapitalYi": 7.81
+      "CapitalYi": 8.18
     },
     {
       "Code": "2376",
@@ -1756,7 +1756,7 @@
       "DividendYield": "2.61",
       "PBratio": "1.55",
       "Category": "17",
-      "CapitalYi": 2935.75
+      "CapitalYi": 2960.62
     },
     {
       "Code": "6257",
@@ -1824,7 +1824,7 @@
       "DividendYield": "3.12",
       "PBratio": "2.09",
       "Category": "29",
-      "CapitalYi": 168.36
+      "CapitalYi": 175.14
     },
     {
       "Code": "3036",
@@ -1841,7 +1841,7 @@
       "DividendYield": "3.63",
       "PBratio": "2.19",
       "Category": "29",
-      "CapitalYi": 126.91
+      "CapitalYi": 134.56
     },
     {
       "Code": "1101",
@@ -1892,7 +1892,7 @@
       "DividendYield": "0.63",
       "PBratio": "6.72",
       "Category": "25",
-      "CapitalYi": 4.24
+      "CapitalYi": 4.26
     },
     {
       "Code": "7750",
@@ -1926,7 +1926,7 @@
       "DividendYield": "1.89",
       "PBratio": "3.08",
       "Category": "27",
-      "CapitalYi": 48.37
+      "CapitalYi": 48.34
     },
     {
       "Code": "3673",
@@ -2011,7 +2011,7 @@
       "DividendYield": "0.00",
       "PBratio": "3.58",
       "Category": "24",
-      "CapitalYi": 41.98
+      "CapitalYi": 45.24
     },
     {
       "Code": "6409",
@@ -2062,7 +2062,7 @@
       "DividendYield": "0.41",
       "PBratio": "20.01",
       "Category": "05",
-      "CapitalYi": 8.85
+      "CapitalYi": 8.95
     },
     {
       "Code": "1519",
@@ -2079,7 +2079,7 @@
       "DividendYield": "2.05",
       "PBratio": "20.08",
       "Category": "05",
-      "CapitalYi": 31.59
+      "CapitalYi": 34.75
     },
     {
       "Code": "6526",
@@ -2113,7 +2113,7 @@
       "DividendYield": "2.81",
       "PBratio": "2.53",
       "Category": "17",
-      "CapitalYi": 1450.23
+      "CapitalYi": 1479.22
     },
     {
       "Code": "4904",
@@ -2147,7 +2147,7 @@
       "DividendYield": "1.81",
       "PBratio": "7.79",
       "Category": "25",
-      "CapitalYi": 12.53
+      "CapitalYi": 12.56
     },
     {
       "Code": "00878",
@@ -2351,7 +2351,7 @@
       "DividendYield": "0.78",
       "PBratio": "1.90",
       "Category": "05",
-      "CapitalYi": 11
+      "CapitalYi": 11.04
     },
     {
       "Code": "3023",
@@ -2793,7 +2793,7 @@
       "DividendYield": "2.89",
       "PBratio": "2.88",
       "Category": "17",
-      "CapitalYi": 1391.7
+      "CapitalYi": 1405.61
     },
     {
       "Code": "1216",
@@ -2912,7 +2912,7 @@
       "DividendYield": "5.56",
       "PBratio": "1.08",
       "Category": "20",
-      "CapitalYi": 186.14
+      "CapitalYi": 189.56
     },
     {
       "Code": "4960",
@@ -2946,7 +2946,7 @@
       "DividendYield": "0.21",
       "PBratio": "7.52",
       "Category": "31",
-      "CapitalYi": 5.34
+      "CapitalYi": 5.44
     },
     {
       "Code": "7610",
@@ -2963,7 +2963,7 @@
       "DividendYield": "0.19",
       "PBratio": "20.89",
       "Category": "35",
-      "CapitalYi": 4.86
+      "CapitalYi": 5.83
     },
     {
       "Code": "2542",
@@ -2980,7 +2980,7 @@
       "DividendYield": "9.96",
       "PBratio": "1.72",
       "Category": "14",
-      "CapitalYi": 217.31
+      "CapitalYi": 215.31
     },
     {
       "Code": "6834",
@@ -3048,7 +3048,7 @@
       "DividendYield": "3.48",
       "PBratio": "1.55",
       "Category": "17",
-      "CapitalYi": 1176.6
+      "CapitalYi": 1206.02
     },
     {
       "Code": "009829",
@@ -3082,7 +3082,7 @@
       "DividendYield": "0.00",
       "PBratio": "6.35",
       "Category": "26",
-      "CapitalYi": 22.62
+      "CapitalYi": 28.62
     },
     {
       "Code": "2486",
@@ -3099,7 +3099,7 @@
       "DividendYield": "0.25",
       "PBratio": "7.78",
       "Category": "26",
-      "CapitalYi": 23.4
+      "CapitalYi": 24.05
     },
     {
       "Code": "6472",
@@ -3116,7 +3116,7 @@
       "DividendYield": "2.51",
       "PBratio": "3.36",
       "Category": "22",
-      "CapitalYi": 12.77
+      "CapitalYi": 12.8
     },
     {
       "Code": "00935",
@@ -3150,7 +3150,7 @@
       "DividendYield": "1.45",
       "PBratio": "1.05",
       "Category": "26",
-      "CapitalYi": 73.79
+      "CapitalYi": 40
     },
     {
       "Code": "6919",
@@ -3235,7 +3235,7 @@
       "DividendYield": "3.65",
       "PBratio": "1.56",
       "Category": "17",
-      "CapitalYi": 1568.09
+      "CapitalYi": 1607.3
     },
     {
       "Code": "00891",
@@ -3286,7 +3286,7 @@
       "DividendYield": "2.21",
       "PBratio": "6.80",
       "Category": "28",
-      "CapitalYi": 12.21
+      "CapitalYi": 12.34
     },
     {
       "Code": "1605",
@@ -3337,7 +3337,7 @@
       "DividendYield": "1.10",
       "PBratio": "7.38",
       "Category": "24",
-      "CapitalYi": 17.95
+      "CapitalYi": 18.36
     },
     {
       "Code": "6715",
@@ -3354,7 +3354,7 @@
       "DividendYield": "0.44",
       "PBratio": "8.07",
       "Category": "28",
-      "CapitalYi": 6.71
+      "CapitalYi": 7.43
     },
     {
       "Code": "5876",
@@ -3371,7 +3371,7 @@
       "DividendYield": "3.25",
       "PBratio": "1.26",
       "Category": "17",
-      "CapitalYi": 486.16
+      "CapitalYi": 491.02
     },
     {
       "Code": "3583",
@@ -3388,7 +3388,7 @@
       "DividendYield": "0.97",
       "PBratio": "4.87",
       "Category": "24",
-      "CapitalYi": 8.03
+      "CapitalYi": 8.39
     },
     {
       "Code": "6789",
@@ -3405,7 +3405,7 @@
       "DividendYield": "0.69",
       "PBratio": "7.48",
       "Category": "24",
-      "CapitalYi": 31.83
+      "CapitalYi": 31.84
     },
     {
       "Code": "6533",
@@ -3456,7 +3456,7 @@
       "DividendYield": "2.05",
       "PBratio": "1.82",
       "Category": "20",
-      "CapitalYi": 94.55
+      "CapitalYi": 96.2
     },
     {
       "Code": "00673R",
@@ -3524,7 +3524,7 @@
       "DividendYield": "0.00",
       "PBratio": "5.99",
       "Category": "28",
-      "CapitalYi": 13.78
+      "CapitalYi": 17.28
     },
     {
       "Code": "2834",
@@ -3541,7 +3541,7 @@
       "DividendYield": "5.59",
       "PBratio": "1.13",
       "Category": "17",
-      "CapitalYi": 971.81
+      "CapitalYi": 1039.83
     },
     {
       "Code": "2027",
@@ -3643,7 +3643,7 @@
       "DividendYield": "4.53",
       "PBratio": "2.06",
       "Category": "29",
-      "CapitalYi": 55.53
+      "CapitalYi": 59.53
     },
     {
       "Code": "00637L",
@@ -3711,7 +3711,7 @@
       "DividendYield": "1.89",
       "PBratio": "1.97",
       "Category": "31",
-      "CapitalYi": 150.58
+      "CapitalYi": 150.6
     },
     {
       "Code": "00405A",
@@ -3830,7 +3830,7 @@
       "DividendYield": "4.98",
       "PBratio": "1.40",
       "Category": "25",
-      "CapitalYi": 132.72
+      "CapitalYi": 145.99
     },
     {
       "Code": "2610",
@@ -3847,7 +3847,7 @@
       "DividendYield": "3.96",
       "PBratio": "1.26",
       "Category": "15",
-      "CapitalYi": 612
+      "CapitalYi": 614.5
     },
     {
       "Code": "2633",
@@ -4000,7 +4000,7 @@
       "DividendYield": "0.50",
       "PBratio": "3.45",
       "Category": "25",
-      "CapitalYi": 12.37
+      "CapitalYi": 12.41
     },
     {
       "Code": "2367",
@@ -4051,7 +4051,7 @@
       "DividendYield": "2.10",
       "PBratio": "10.00",
       "Category": "20",
-      "CapitalYi": 5.55
+      "CapitalYi": 5.69
     },
     {
       "Code": "7795",
@@ -4119,7 +4119,7 @@
       "DividendYield": "1.21",
       "PBratio": "4.52",
       "Category": "28",
-      "CapitalYi": 15.68
+      "CapitalYi": 16.15
     },
     {
       "Code": "3031",
@@ -4187,7 +4187,7 @@
       "DividendYield": "3.23",
       "PBratio": "1.48",
       "Category": "28",
-      "CapitalYi": 15.45
+      "CapitalYi": 10.81
     },
     {
       "Code": "3545",
@@ -4204,7 +4204,7 @@
       "DividendYield": "1.52",
       "PBratio": "1.30",
       "Category": "24",
-      "CapitalYi": 22.25
+      "CapitalYi": 22.24
     },
     {
       "Code": "6451",
@@ -4221,7 +4221,7 @@
       "DividendYield": "0.06",
       "PBratio": "4.61",
       "Category": "24",
-      "CapitalYi": 11.33
+      "CapitalYi": 11.79
     },
     {
       "Code": "2105",
@@ -4255,7 +4255,7 @@
       "DividendYield": "3.95",
       "PBratio": "1.12",
       "Category": "26",
-      "CapitalYi": 46.5
+      "CapitalYi": 34.88
     },
     {
       "Code": "00865B",
@@ -4306,7 +4306,7 @@
       "DividendYield": "0.00",
       "PBratio": "4.90",
       "Category": "10",
-      "CapitalYi": 8.07
+      "CapitalYi": 12
     },
     {
       "Code": "1476",
@@ -4510,7 +4510,7 @@
       "DividendYield": "1.46",
       "PBratio": "2.58",
       "Category": "21",
-      "CapitalYi": 117.22
+      "CapitalYi": 118.42
     },
     {
       "Code": "2637",
@@ -4629,7 +4629,7 @@
       "DividendYield": "3.57",
       "PBratio": "2.04",
       "Category": "25",
-      "CapitalYi": 14.59
+      "CapitalYi": 15.13
     },
     {
       "Code": "4961",
@@ -4663,7 +4663,7 @@
       "DividendYield": "5.37",
       "PBratio": "3.10",
       "Category": "25",
-      "CapitalYi": 62.43
+      "CapitalYi": 62.46
     },
     {
       "Code": "9945",
@@ -4714,7 +4714,7 @@
       "DividendYield": "3.94",
       "PBratio": "1.87",
       "Category": "24",
-      "CapitalYi": 11.08
+      "CapitalYi": 11.09
     },
     {
       "Code": "1808",
@@ -4731,7 +4731,7 @@
       "DividendYield": "4.08",
       "PBratio": "2.38",
       "Category": "14",
-      "CapitalYi": 89.3
+      "CapitalYi": 71.44
     },
     {
       "Code": "3701",
@@ -4748,7 +4748,7 @@
       "DividendYield": "0.38",
       "PBratio": "2.62",
       "Category": "25",
-      "CapitalYi": 23.66
+      "CapitalYi": 23.67
     },
     {
       "Code": "2855",
@@ -4833,7 +4833,7 @@
       "DividendYield": "0.52",
       "PBratio": "4.70",
       "Category": "24",
-      "CapitalYi": 18.21
+      "CapitalYi": 19.37
     },
     {
       "Code": "2352",
@@ -4900,8 +4900,8 @@
       "PEratio": "",
       "DividendYield": "0.00",
       "PBratio": "30.93",
-      "Category": "其他",
-      "CapitalYi": null
+      "Category": "22",
+      "CapitalYi": 5.99
     },
     {
       "Code": "1503",
@@ -4935,7 +4935,7 @@
       "DividendYield": "1.87",
       "PBratio": "3.78",
       "Category": "20",
-      "CapitalYi": 5.29
+      "CapitalYi": 5.51
     },
     {
       "Code": "2359",
@@ -5003,7 +5003,7 @@
       "DividendYield": "0.00",
       "PBratio": "0.57",
       "Category": "03",
-      "CapitalYi": 112.66
+      "CapitalYi": 152.66
     },
     {
       "Code": "5469",
@@ -5054,7 +5054,7 @@
       "DividendYield": "1.16",
       "PBratio": "1.63",
       "Category": "27",
-      "CapitalYi": 43.64
+      "CapitalYi": 45.17
     },
     {
       "Code": "6691",
@@ -5071,7 +5071,7 @@
       "DividendYield": "3.40",
       "PBratio": "10.54",
       "Category": "31",
-      "CapitalYi": 12.15
+      "CapitalYi": 13.35
     },
     {
       "Code": "7788",
@@ -5122,7 +5122,7 @@
       "DividendYield": "2.46",
       "PBratio": "4.82",
       "Category": "29",
-      "CapitalYi": 19.37
+      "CapitalYi": 19.4
     },
     {
       "Code": "6742",
@@ -5173,7 +5173,7 @@
       "DividendYield": "0.00",
       "PBratio": "7.99",
       "Category": "20",
-      "CapitalYi": 15.26
+      "CapitalYi": 16.46
     },
     {
       "Code": "7710",
@@ -5189,8 +5189,8 @@
       "PEratio": "20.24",
       "DividendYield": "2.30",
       "PBratio": "7.20",
-      "Category": "其他",
-      "CapitalYi": null
+      "Category": "25",
+      "CapitalYi": 6.39
     },
     {
       "Code": "00735",
@@ -5343,7 +5343,7 @@
       "DividendYield": "4.70",
       "PBratio": "3.38",
       "Category": "35",
-      "CapitalYi": 13.57
+      "CapitalYi": 13.59
     },
     {
       "Code": "3708",
@@ -5360,7 +5360,7 @@
       "DividendYield": "6.70",
       "PBratio": "0.40",
       "Category": "35",
-      "CapitalYi": 9.21
+      "CapitalYi": 8.98
     },
     {
       "Code": "00409A",
@@ -5428,7 +5428,7 @@
       "DividendYield": "2.87",
       "PBratio": "2.87",
       "Category": "24",
-      "CapitalYi": 20.01
+      "CapitalYi": 20.42
     },
     {
       "Code": "2421",
@@ -5462,7 +5462,7 @@
       "DividendYield": "5.51",
       "PBratio": "1.30",
       "Category": "17",
-      "CapitalYi": 217.09
+      "CapitalYi": 245.53
     },
     {
       "Code": "6282",
@@ -5479,7 +5479,7 @@
       "DividendYield": "1.94",
       "PBratio": "1.55",
       "Category": "28",
-      "CapitalYi": 85.6
+      "CapitalYi": 85.61
     },
     {
       "Code": "6944",
@@ -5496,7 +5496,7 @@
       "DividendYield": "2.64",
       "PBratio": "6.86",
       "Category": "35",
-      "CapitalYi": 7.67
+      "CapitalYi": 9.97
     },
     {
       "Code": "2406",
@@ -5581,7 +5581,7 @@
       "DividendYield": "2.20",
       "PBratio": "2.40",
       "Category": "31",
-      "CapitalYi": 14.46
+      "CapitalYi": 14.34
     },
     {
       "Code": "6706",
@@ -5921,7 +5921,7 @@
       "DividendYield": "0.07",
       "PBratio": "1.67",
       "Category": "24",
-      "CapitalYi": 55.59
+      "CapitalYi": 55.6
     },
     {
       "Code": "2915",
@@ -6006,7 +6006,7 @@
       "DividendYield": "5.70",
       "PBratio": "1.17",
       "Category": "17",
-      "CapitalYi": 602.16
+      "CapitalYi": 642.51
     },
     {
       "Code": "3014",
@@ -6346,7 +6346,7 @@
       "DividendYield": "4.70",
       "PBratio": "0.91",
       "Category": "17",
-      "CapitalYi": 486.53
+      "CapitalYi": 492.34
     },
     {
       "Code": "2302",
@@ -6397,7 +6397,7 @@
       "DividendYield": "2.56",
       "PBratio": "3.04",
       "Category": "24",
-      "CapitalYi": 9.01
+      "CapitalYi": 9.72
     },
     {
       "Code": "2548",
@@ -6414,7 +6414,7 @@
       "DividendYield": "9.34",
       "PBratio": "1.40",
       "Category": "14",
-      "CapitalYi": 31.97
+      "CapitalYi": 33.57
     },
     {
       "Code": "6689",
@@ -6533,7 +6533,7 @@
       "DividendYield": "2.23",
       "PBratio": "1.20",
       "Category": "20",
-      "CapitalYi": 12.88
+      "CapitalYi": 13.39
     },
     {
       "Code": "00738U",
@@ -6584,7 +6584,7 @@
       "DividendYield": "3.46",
       "PBratio": "1.30",
       "Category": "17",
-      "CapitalYi": 363.36
+      "CapitalYi": 366.59
     },
     {
       "Code": "6141",
@@ -6635,7 +6635,7 @@
       "DividendYield": "0.00",
       "PBratio": "2.36",
       "Category": "24",
-      "CapitalYi": 36.68
+      "CapitalYi": 37.03
     },
     {
       "Code": "4766",
@@ -6686,7 +6686,7 @@
       "DividendYield": "0.00",
       "PBratio": "2.55",
       "Category": "26",
-      "CapitalYi": 14.14
+      "CapitalYi": 14.12
     },
     {
       "Code": "6962",
@@ -6737,7 +6737,7 @@
       "DividendYield": "1.56",
       "PBratio": "1.90",
       "Category": "22",
-      "CapitalYi": 26.69
+      "CapitalYi": 27
     },
     {
       "Code": "8478",
@@ -6771,7 +6771,7 @@
       "DividendYield": "2.70",
       "PBratio": "2.64",
       "Category": "28",
-      "CapitalYi": 21.81
+      "CapitalYi": 21.91
     },
     {
       "Code": "2332",
@@ -6839,7 +6839,7 @@
       "DividendYield": "0.90",
       "PBratio": "3.32",
       "Category": "25",
-      "CapitalYi": 20.51
+      "CapitalYi": 21.33
     },
     {
       "Code": "5243",
@@ -6890,7 +6890,7 @@
       "DividendYield": "5.16",
       "PBratio": "1.17",
       "Category": "27",
-      "CapitalYi": 25.36
+      "CapitalYi": 24.86
     },
     {
       "Code": "2851",
@@ -6941,7 +6941,7 @@
       "DividendYield": "6.37",
       "PBratio": "1.85",
       "Category": "14",
-      "CapitalYi": 47.19
+      "CapitalYi": 47.24
     },
     {
       "Code": "1736",
@@ -7060,7 +7060,7 @@
       "DividendYield": "0.00",
       "PBratio": "7.24",
       "Category": "36",
-      "CapitalYi": 3.55
+      "CapitalYi": 3.56
     },
     {
       "Code": "3717",
@@ -7077,7 +7077,7 @@
       "DividendYield": "0.76",
       "PBratio": "1.55",
       "Category": "12",
-      "CapitalYi": 20.78
+      "CapitalYi": 21.09
     },
     {
       "Code": "1210",
@@ -7111,7 +7111,7 @@
       "DividendYield": "4.65",
       "PBratio": "1.70",
       "Category": "29",
-      "CapitalYi": 48.07
+      "CapitalYi": 51.66
     },
     {
       "Code": "00954",
@@ -7179,7 +7179,7 @@
       "DividendYield": "0.00",
       "PBratio": "6.02",
       "Category": "22",
-      "CapitalYi": 15.8
+      "CapitalYi": 15.82
     },
     {
       "Code": "009803",
@@ -7332,7 +7332,7 @@
       "DividendYield": "0.00",
       "PBratio": "2.72",
       "Category": "24",
-      "CapitalYi": 15.75
+      "CapitalYi": 15.73
     },
     {
       "Code": "00680L",
@@ -7383,7 +7383,7 @@
       "DividendYield": "7.52",
       "PBratio": "1.72",
       "Category": "20",
-      "CapitalYi": 18.19
+      "CapitalYi": 18.95
     },
     {
       "Code": "6416",
@@ -7604,7 +7604,7 @@
       "DividendYield": "2.24",
       "PBratio": "4.21",
       "Category": "05",
-      "CapitalYi": 27.31
+      "CapitalYi": 27.86
     },
     {
       "Code": "00731",
@@ -7672,7 +7672,7 @@
       "DividendYield": "0.63",
       "PBratio": "5.56",
       "Category": "21",
-      "CapitalYi": 10.28
+      "CapitalYi": 10.38
     },
     {
       "Code": "2236",
@@ -7689,7 +7689,7 @@
       "DividendYield": "0.66",
       "PBratio": "2.56",
       "Category": "12",
-      "CapitalYi": 6.21
+      "CapitalYi": 6.35
     },
     {
       "Code": "6153",
@@ -7825,7 +7825,7 @@
       "DividendYield": "5.98",
       "PBratio": "1.61",
       "Category": "37",
-      "CapitalYi": 24.94
+      "CapitalYi": 25.03
     },
     {
       "Code": "4764",
@@ -7842,7 +7842,7 @@
       "DividendYield": "0.63",
       "PBratio": "5.28",
       "Category": "21",
-      "CapitalYi": 8.55
+      "CapitalYi": 9.15
     },
     {
       "Code": "1316",
@@ -7859,7 +7859,7 @@
       "DividendYield": "0.00",
       "PBratio": "0.86",
       "Category": "14",
-      "CapitalYi": 37.59
+      "CapitalYi": 40.16
     },
     {
       "Code": "3022",
@@ -8012,7 +8012,7 @@
       "DividendYield": "5.48",
       "PBratio": "1.91",
       "Category": "29",
-      "CapitalYi": 23.54
+      "CapitalYi": 24.72
     },
     {
       "Code": "8341",
@@ -8046,7 +8046,7 @@
       "DividendYield": "1.73",
       "PBratio": "0.63",
       "Category": "26",
-      "CapitalYi": 108.93
+      "CapitalYi": 98.04
     },
     {
       "Code": "9917",
@@ -8063,7 +8063,7 @@
       "DividendYield": "5.69",
       "PBratio": "3.85",
       "Category": "20",
-      "CapitalYi": 45.12
+      "CapitalYi": 47.38
     },
     {
       "Code": "00642U",
@@ -8148,7 +8148,7 @@
       "DividendYield": "0.64",
       "PBratio": "8.88",
       "Category": "24",
-      "CapitalYi": 3.68
+      "CapitalYi": 3.86
     },
     {
       "Code": "2034",
@@ -8233,7 +8233,7 @@
       "DividendYield": "1.20",
       "PBratio": "1.78",
       "Category": "26",
-      "CapitalYi": 11.03
+      "CapitalYi": 14.63
     },
     {
       "Code": "2646",
@@ -8284,7 +8284,7 @@
       "DividendYield": "5.01",
       "PBratio": "1.14",
       "Category": "02",
-      "CapitalYi": 179.6
+      "CapitalYi": 183.19
     },
     {
       "Code": "6152",
@@ -8352,7 +8352,7 @@
       "DividendYield": "0.66",
       "PBratio": "4.67",
       "Category": "31",
-      "CapitalYi": 3.64
+      "CapitalYi": 3.84
     },
     {
       "Code": "3515",
@@ -8505,7 +8505,7 @@
       "DividendYield": "1.78",
       "PBratio": "3.02",
       "Category": "26",
-      "CapitalYi": 6.77
+      "CapitalYi": 6.78
     },
     {
       "Code": "00668",
@@ -8573,7 +8573,7 @@
       "DividendYield": "6.52",
       "PBratio": "3.25",
       "Category": "16",
-      "CapitalYi": 6.66
+      "CapitalYi": 7
     },
     {
       "Code": "3703",
@@ -8692,7 +8692,7 @@
       "DividendYield": "5.92",
       "PBratio": "1.29",
       "Category": "20",
-      "CapitalYi": 67.56
+      "CapitalYi": 68.71
     },
     {
       "Code": "3049",
@@ -8828,7 +8828,7 @@
       "DividendYield": "0.00",
       "PBratio": "2.21",
       "Category": "27",
-      "CapitalYi": 10.16
+      "CapitalYi": 10.66
     },
     {
       "Code": "6202",
@@ -9134,7 +9134,7 @@
       "DividendYield": "2.10",
       "PBratio": "2.07",
       "Category": "10",
-      "CapitalYi": 6.43
+      "CapitalYi": 6.44
     },
     {
       "Code": "00945B",
@@ -9168,7 +9168,7 @@
       "DividendYield": "5.20",
       "PBratio": "1.82",
       "Category": "10",
-      "CapitalYi": 24.69
+      "CapitalYi": 26.69
     },
     {
       "Code": "2535",
@@ -9202,7 +9202,7 @@
       "DividendYield": "1.25",
       "PBratio": "1.54",
       "Category": "21",
-      "CapitalYi": 12.46
+      "CapitalYi": 12.47
     },
     {
       "Code": "00643",
@@ -9270,7 +9270,7 @@
       "DividendYield": "4.35",
       "PBratio": "0.80",
       "Category": "14",
-      "CapitalYi": 160.79
+      "CapitalYi": 168.85
     },
     {
       "Code": "00752",
@@ -9474,7 +9474,7 @@
       "DividendYield": "0.00",
       "PBratio": "0.88",
       "Category": "10",
-      "CapitalYi": 184.12
+      "CapitalYi": 182.12
     },
     {
       "Code": "6670",
@@ -9508,7 +9508,7 @@
       "DividendYield": "6.28",
       "PBratio": "2.68",
       "Category": "38",
-      "CapitalYi": 22.24
+      "CapitalYi": 22.23
     },
     {
       "Code": "3416",
@@ -9525,7 +9525,7 @@
       "DividendYield": "2.87",
       "PBratio": "4.01",
       "Category": "25",
-      "CapitalYi": 8.05
+      "CapitalYi": 8.45
     },
     {
       "Code": "1723",
@@ -9678,7 +9678,7 @@
       "DividendYield": "2.13",
       "PBratio": "3.09",
       "Category": "24",
-      "CapitalYi": 6.72
+      "CapitalYi": 6.75
     },
     {
       "Code": "00655L",
@@ -9814,7 +9814,7 @@
       "DividendYield": "3.40",
       "PBratio": "2.92",
       "Category": "02",
-      "CapitalYi": 29.85
+      "CapitalYi": 32.83
     },
     {
       "Code": "6768",
@@ -9865,7 +9865,7 @@
       "DividendYield": "0.00",
       "PBratio": "3.10",
       "Category": "24",
-      "CapitalYi": 10.65
+      "CapitalYi": 10.69
     },
     {
       "Code": "5292",
@@ -9882,7 +9882,7 @@
       "DividendYield": "2.78",
       "PBratio": "5.14",
       "Category": "35",
-      "CapitalYi": 4.21
+      "CapitalYi": 4.63
     },
     {
       "Code": "00693U",
@@ -9984,7 +9984,7 @@
       "DividendYield": "1.69",
       "PBratio": "1.88",
       "Category": "27",
-      "CapitalYi": 5.17
+      "CapitalYi": 5.64
     },
     {
       "Code": "1232",
@@ -10103,7 +10103,7 @@
       "DividendYield": "1.10",
       "PBratio": "4.50",
       "Category": "31",
-      "CapitalYi": 8.28
+      "CapitalYi": 8.35
     },
     {
       "Code": "6873",
@@ -10222,7 +10222,7 @@
       "DividendYield": "0.00",
       "PBratio": "15.36",
       "Category": "22",
-      "CapitalYi": 13.96
+      "CapitalYi": 14.09
     },
     {
       "Code": "4169",
@@ -10528,7 +10528,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.14",
       "Category": "28",
-      "CapitalYi": 11.09
+      "CapitalYi": 8.07
     },
     {
       "Code": "00690",
@@ -10562,7 +10562,7 @@
       "DividendYield": "5.20",
       "PBratio": "1.06",
       "Category": "17",
-      "CapitalYi": 454.06
+      "CapitalYi": 480.78
     },
     {
       "Code": "4585",
@@ -10647,7 +10647,7 @@
       "DividendYield": "0.00",
       "PBratio": "25.49",
       "Category": "26",
-      "CapitalYi": 2.78
+      "CapitalYi": 6
     },
     {
       "Code": "00960",
@@ -10868,7 +10868,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.87",
       "Category": "22",
-      "CapitalYi": 30.69
+      "CapitalYi": 30.21
     },
     {
       "Code": "2009",
@@ -11072,7 +11072,7 @@
       "DividendYield": "0.00",
       "PBratio": "2.27",
       "Category": "24",
-      "CapitalYi": 14.02
+      "CapitalYi": 14.21
     },
     {
       "Code": "00678",
@@ -11225,7 +11225,7 @@
       "DividendYield": "5.79",
       "PBratio": "1.09",
       "Category": "20",
-      "CapitalYi": 72.32
+      "CapitalYi": 74.18
     },
     {
       "Code": "1313",
@@ -11293,7 +11293,7 @@
       "DividendYield": "2.59",
       "PBratio": "2.02",
       "Category": "12",
-      "CapitalYi": 22.56
+      "CapitalYi": 16.92
     },
     {
       "Code": "3591",
@@ -11310,7 +11310,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.31",
       "Category": "26",
-      "CapitalYi": 14.54
+      "CapitalYi": 13.04
     },
     {
       "Code": "00943",
@@ -11599,7 +11599,7 @@
       "DividendYield": "4.93",
       "PBratio": "2.02",
       "Category": "26",
-      "CapitalYi": 8.05
+      "CapitalYi": 6.86
     },
     {
       "Code": "4571",
@@ -11752,7 +11752,7 @@
       "DividendYield": "8.60",
       "PBratio": "1.94",
       "Category": "14",
-      "CapitalYi": 119.31
+      "CapitalYi": 145.56
     },
     {
       "Code": "5515",
@@ -11837,7 +11837,7 @@
       "DividendYield": "3.10",
       "PBratio": "2.70",
       "Category": "25",
-      "CapitalYi": 9.25
+      "CapitalYi": 9.26
     },
     {
       "Code": "5607",
@@ -11938,7 +11938,7 @@
       "PEratio": "11.87",
       "DividendYield": "1.39",
       "PBratio": "3.03",
-      "Category": "02",
+      "Category": "29",
       "CapitalYi": 8.07
     },
     {
@@ -12007,7 +12007,7 @@
       "DividendYield": "0.00",
       "PBratio": "3.89",
       "Category": "12",
-      "CapitalYi": 6.94
+      "CapitalYi": 7.74
     },
     {
       "Code": "5608",
@@ -12160,7 +12160,7 @@
       "DividendYield": "17.65",
       "PBratio": "0.98",
       "Category": "14",
-      "CapitalYi": 43.6
+      "CapitalYi": 50.16
     },
     {
       "Code": "00762",
@@ -12245,7 +12245,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.13",
       "Category": "20",
-      "CapitalYi": 85.29
+      "CapitalYi": 85.39
     },
     {
       "Code": "3705",
@@ -12415,7 +12415,7 @@
       "DividendYield": "0.00",
       "PBratio": "3.96",
       "Category": "26",
-      "CapitalYi": 8.55
+      "CapitalYi": 8.61
     },
     {
       "Code": "6743",
@@ -12483,7 +12483,7 @@
       "DividendYield": "3.20",
       "PBratio": "3.71",
       "Category": "35",
-      "CapitalYi": 5.32
+      "CapitalYi": 6
     },
     {
       "Code": "3229",
@@ -12568,7 +12568,7 @@
       "DividendYield": "5.50",
       "PBratio": "1.98",
       "Category": "06",
-      "CapitalYi": 19.67
+      "CapitalYi": 19.86
     },
     {
       "Code": "1218",
@@ -12721,7 +12721,7 @@
       "DividendYield": "3.83",
       "PBratio": "1.13",
       "Category": "22",
-      "CapitalYi": 9.54
+      "CapitalYi": 10.36
     },
     {
       "Code": "7768",
@@ -12738,7 +12738,7 @@
       "DividendYield": "1.40",
       "PBratio": "3.91",
       "Category": "24",
-      "CapitalYi": 6.23
+      "CapitalYi": 7.01
     },
     {
       "Code": "1308",
@@ -12925,7 +12925,7 @@
       "DividendYield": "2.71",
       "PBratio": "2.87",
       "Category": "24",
-      "CapitalYi": 9.11
+      "CapitalYi": 10.01
     },
     {
       "Code": "2349",
@@ -13009,8 +13009,8 @@
       "PEratio": "12.03",
       "DividendYield": "7.29",
       "PBratio": "3.00",
-      "Category": "其他",
-      "CapitalYi": null
+      "Category": "24",
+      "CapitalYi": 6
     },
     {
       "Code": "2420",
@@ -13078,7 +13078,7 @@
       "DividendYield": "6.12",
       "PBratio": "3.40",
       "Category": "20",
-      "CapitalYi": 7.8
+      "CapitalYi": 7.85
     },
     {
       "Code": "6799",
@@ -13112,7 +13112,7 @@
       "DividendYield": "0.82",
       "PBratio": "1.51",
       "Category": "36",
-      "CapitalYi": 6.8
+      "CapitalYi": 7.16
     },
     {
       "Code": "2836",
@@ -13129,7 +13129,7 @@
       "DividendYield": "3.73",
       "PBratio": "0.81",
       "Category": "17",
-      "CapitalYi": 187.99
+      "CapitalYi": 189.83
     },
     {
       "Code": "3694",
@@ -13213,8 +13213,8 @@
       "PEratio": "33.57",
       "DividendYield": "0.79",
       "PBratio": "2.78",
-      "Category": "其他",
-      "CapitalYi": null
+      "Category": "35",
+      "CapitalYi": 10.61
     },
     {
       "Code": "2258",
@@ -13231,7 +13231,7 @@
       "DividendYield": "0.00",
       "PBratio": "4.65",
       "Category": "12",
-      "CapitalYi": 175.11
+      "CapitalYi": 175.13
     },
     {
       "Code": "9907",
@@ -13282,7 +13282,7 @@
       "DividendYield": "5.92",
       "PBratio": "1.36",
       "Category": "17",
-      "CapitalYi": 24.99
+      "CapitalYi": 26.67
     },
     {
       "Code": "4912",
@@ -13315,8 +13315,8 @@
       "PEratio": "10.98",
       "DividendYield": "4.21",
       "PBratio": "4.11",
-      "Category": "其他",
-      "CapitalYi": null
+      "Category": "27",
+      "CapitalYi": 5.85
     },
     {
       "Code": "9930",
@@ -13537,7 +13537,7 @@
       "DividendYield": "4.92",
       "PBratio": "0.98",
       "Category": "35",
-      "CapitalYi": 18.12
+      "CapitalYi": 18.23
     },
     {
       "Code": "3003",
@@ -13843,7 +13843,7 @@
       "DividendYield": "0.00",
       "PBratio": "0.66",
       "Category": "15",
-      "CapitalYi": 82.48
+      "CapitalYi": 69.04
     },
     {
       "Code": "2636",
@@ -13877,7 +13877,7 @@
       "DividendYield": "6.53",
       "PBratio": "1.00",
       "Category": "30",
-      "CapitalYi": 7.93
+      "CapitalYi": 7.73
     },
     {
       "Code": "4564",
@@ -13911,7 +13911,7 @@
       "DividendYield": "5.80",
       "PBratio": "2.06",
       "Category": "14",
-      "CapitalYi": 13.05
+      "CapitalYi": 14.62
     },
     {
       "Code": "2015",
@@ -13945,7 +13945,7 @@
       "DividendYield": "5.25",
       "PBratio": "1.65",
       "Category": "22",
-      "CapitalYi": 17.87
+      "CapitalYi": 19.66
     },
     {
       "Code": "4934",
@@ -13979,7 +13979,7 @@
       "DividendYield": "1.82",
       "PBratio": "0.92",
       "Category": "22",
-      "CapitalYi": 14.47
+      "CapitalYi": 12.52
     },
     {
       "Code": "4104",
@@ -14013,7 +14013,7 @@
       "DividendYield": "0.00",
       "PBratio": "4.97",
       "Category": "20",
-      "CapitalYi": 4
+      "CapitalYi": 3
     },
     {
       "Code": "00639",
@@ -14251,7 +14251,7 @@
       "DividendYield": "4.16",
       "PBratio": "0.69",
       "Category": "22",
-      "CapitalYi": 19.53
+      "CapitalYi": 19.57
     },
     {
       "Code": "5288",
@@ -14268,7 +14268,7 @@
       "DividendYield": "3.59",
       "PBratio": "1.99",
       "Category": "05",
-      "CapitalYi": 6.97
+      "CapitalYi": 6.99
     },
     {
       "Code": "00952",
@@ -14591,7 +14591,7 @@
       "DividendYield": "20.84",
       "PBratio": "0.62",
       "Category": "14",
-      "CapitalYi": 32.52
+      "CapitalYi": 34.72
     },
     {
       "Code": "9942",
@@ -14642,7 +14642,7 @@
       "DividendYield": "4.99",
       "PBratio": "3.51",
       "Category": "25",
-      "CapitalYi": 5.24
+      "CapitalYi": 5.76
     },
     {
       "Code": "6598",
@@ -14743,8 +14743,8 @@
       "PEratio": "8.73",
       "DividendYield": "7.80",
       "PBratio": "1.26",
-      "Category": "其他",
-      "CapitalYi": null
+      "Category": "20",
+      "CapitalYi": 27.73
     },
     {
       "Code": "009811",
@@ -14846,7 +14846,7 @@
       "DividendYield": "2.41",
       "PBratio": "1.48",
       "Category": "28",
-      "CapitalYi": 9.49
+      "CapitalYi": 9.47
     },
     {
       "Code": "8438",
@@ -15101,7 +15101,7 @@
       "DividendYield": "0.00",
       "PBratio": "2.23",
       "Category": "22",
-      "CapitalYi": 7.73
+      "CapitalYi": 7.74
     },
     {
       "Code": "5225",
@@ -15287,8 +15287,8 @@
       "PEratio": "",
       "DividendYield": "0.00",
       "PBratio": "4.11",
-      "Category": "其他",
-      "CapitalYi": null
+      "Category": "27",
+      "CapitalYi": 17.5
     },
     {
       "Code": "6136",
@@ -15424,7 +15424,7 @@
       "DividendYield": "5.21",
       "PBratio": "1.69",
       "Category": "22",
-      "CapitalYi": 19.02
+      "CapitalYi": 20.16
     },
     {
       "Code": "8201",
@@ -15832,7 +15832,7 @@
       "DividendYield": "0.00",
       "PBratio": "0.89",
       "Category": "31",
-      "CapitalYi": 19.19
+      "CapitalYi": 19.03
     },
     {
       "Code": "3025",
@@ -16138,7 +16138,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.06",
       "Category": "27",
-      "CapitalYi": 33.08
+      "CapitalYi": 30.42
     },
     {
       "Code": "2397",
@@ -16257,7 +16257,7 @@
       "DividendYield": "0.00",
       "PBratio": "5.58",
       "Category": "22",
-      "CapitalYi": 3.6
+      "CapitalYi": 3.61
     },
     {
       "Code": "9136",
@@ -16444,7 +16444,7 @@
       "DividendYield": "7.02",
       "PBratio": "2.09",
       "Category": "20",
-      "CapitalYi": 6.62
+      "CapitalYi": 7.95
     },
     {
       "Code": "5484",
@@ -16563,7 +16563,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.61",
       "Category": "22",
-      "CapitalYi": 26.5
+      "CapitalYi": 26.52
     },
     {
       "Code": "00736",
@@ -16801,7 +16801,7 @@
       "DividendYield": "0.00",
       "PBratio": "3.01",
       "Category": "22",
-      "CapitalYi": 85.99
+      "CapitalYi": 46.48
     },
     {
       "Code": "1466",
@@ -16852,7 +16852,7 @@
       "DividendYield": "0.00",
       "PBratio": "7.73",
       "Category": "24",
-      "CapitalYi": 3.18
+      "CapitalYi": 3.23
     },
     {
       "Code": "00989A",
@@ -17038,8 +17038,8 @@
       "PEratio": "18.88",
       "DividendYield": "4.46",
       "PBratio": "3.10",
-      "Category": "其他",
-      "CapitalYi": null
+      "Category": "23",
+      "CapitalYi": 32.48
     },
     {
       "Code": "009818",
@@ -17107,7 +17107,7 @@
       "DividendYield": "6.90",
       "PBratio": "1.24",
       "Category": "05",
-      "CapitalYi": 15.51
+      "CapitalYi": 20.28
     },
     {
       "Code": "00645",
@@ -17192,7 +17192,7 @@
       "DividendYield": "2.97",
       "PBratio": "0.64",
       "Category": "22",
-      "CapitalYi": 14.98
+      "CapitalYi": 15.06
     },
     {
       "Code": "00737",
@@ -17617,7 +17617,7 @@
       "DividendYield": "10.53",
       "PBratio": "2.11",
       "Category": "16",
-      "CapitalYi": 8.49
+      "CapitalYi": 8.38
     },
     {
       "Code": "3027",
@@ -17634,7 +17634,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.09",
       "Category": "27",
-      "CapitalYi": 13
+      "CapitalYi": 12.92
     },
     {
       "Code": "00903",
@@ -18025,7 +18025,7 @@
       "DividendYield": "16.03",
       "PBratio": "0.92",
       "Category": "14",
-      "CapitalYi": 21.92
+      "CapitalYi": 23.02
     },
     {
       "Code": "2482",
@@ -18280,7 +18280,7 @@
       "DividendYield": "3.94",
       "PBratio": "0.88",
       "Category": "06",
-      "CapitalYi": 8.76
+      "CapitalYi": 10.16
     },
     {
       "Code": "2505",
@@ -18603,7 +18603,7 @@
       "DividendYield": "0.00",
       "PBratio": "0.59",
       "Category": "14",
-      "CapitalYi": 36.6
+      "CapitalYi": 36.62
     },
     {
       "Code": "9937",
@@ -18739,7 +18739,7 @@
       "DividendYield": "6.20",
       "PBratio": "1.34",
       "Category": "28",
-      "CapitalYi": 9
+      "CapitalYi": 10
     },
     {
       "Code": "7823",
@@ -18875,7 +18875,7 @@
       "DividendYield": "4.26",
       "PBratio": "2.57",
       "Category": "35",
-      "CapitalYi": 9.15
+      "CapitalYi": 9.04
     },
     {
       "Code": "1726",
@@ -19011,7 +19011,7 @@
       "DividendYield": "3.52",
       "PBratio": "1.03",
       "Category": "35",
-      "CapitalYi": 16.79
+      "CapitalYi": 16.49
     },
     {
       "Code": "00932",
@@ -19334,7 +19334,7 @@
       "DividendYield": "0.21",
       "PBratio": "2.25",
       "Category": "14",
-      "CapitalYi": 9.04
+      "CapitalYi": 9.11
     },
     {
       "Code": "3432",
@@ -19470,7 +19470,7 @@
       "DividendYield": "0.00",
       "PBratio": "33.52",
       "Category": "27",
-      "CapitalYi": 10.61
+      "CapitalYi": 10.86
     },
     {
       "Code": "2237",
@@ -19486,8 +19486,8 @@
       "PEratio": "8.00",
       "DividendYield": "0.00",
       "PBratio": "2.02",
-      "Category": "其他",
-      "CapitalYi": null
+      "Category": "12",
+      "CapitalYi": 12.89
     },
     {
       "Code": "3002",
@@ -19572,7 +19572,7 @@
       "DividendYield": "7.88",
       "PBratio": "2.78",
       "Category": "35",
-      "CapitalYi": 4.6
+      "CapitalYi": 5.2
     },
     {
       "Code": "4588",
@@ -19606,7 +19606,7 @@
       "DividendYield": "0.00",
       "PBratio": "4.03",
       "Category": "22",
-      "CapitalYi": 8.88
+      "CapitalYi": 8.97
     },
     {
       "Code": "3669",
@@ -20014,7 +20014,7 @@
       "DividendYield": "5.39",
       "PBratio": "1.13",
       "Category": "27",
-      "CapitalYi": 9.7
+      "CapitalYi": 9.74
     },
     {
       "Code": "912000",
@@ -20728,7 +20728,7 @@
       "DividendYield": "0.00",
       "PBratio": "2.04",
       "Category": "25",
-      "CapitalYi": 5.42
+      "CapitalYi": 5.38
     },
     {
       "Code": "2616",
@@ -20898,7 +20898,7 @@
       "DividendYield": "0.00",
       "PBratio": "0.71",
       "Category": "20",
-      "CapitalYi": 44.13
+      "CapitalYi": 46.15
     },
     {
       "Code": "00657",
@@ -20932,7 +20932,7 @@
       "DividendYield": "2.08",
       "PBratio": "0.93",
       "Category": "05",
-      "CapitalYi": 10.94
+      "CapitalYi": 11.92
     },
     {
       "Code": "1432",
@@ -21017,7 +21017,7 @@
       "DividendYield": "3.33",
       "PBratio": "3.40",
       "Category": "22",
-      "CapitalYi": 2.48
+      "CapitalYi": 3.04
     },
     {
       "Code": "2432",
@@ -21153,7 +21153,7 @@
       "DividendYield": "2.73",
       "PBratio": "0.83",
       "Category": "14",
-      "CapitalYi": 11.32
+      "CapitalYi": 11.66
     },
     {
       "Code": "7736",
@@ -21187,7 +21187,7 @@
       "DividendYield": "3.80",
       "PBratio": "0.77",
       "Category": "05",
-      "CapitalYi": 9.46
+      "CapitalYi": 10.31
     },
     {
       "Code": "1468",
@@ -21306,7 +21306,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.68",
       "Category": "31",
-      "CapitalYi": 14.9
+      "CapitalYi": 14.76
     },
     {
       "Code": "9926",
@@ -21374,7 +21374,7 @@
       "DividendYield": "9.17",
       "PBratio": "1.25",
       "Category": "20",
-      "CapitalYi": 1.91
+      "CapitalYi": 2.01
     },
     {
       "Code": "2430",
@@ -21493,7 +21493,7 @@
       "DividendYield": "0.91",
       "PBratio": "0.39",
       "Category": "20",
-      "CapitalYi": 21.84
+      "CapitalYi": 22.11
     },
     {
       "Code": "3308",
@@ -21561,7 +21561,7 @@
       "DividendYield": "6.15",
       "PBratio": "1.02",
       "Category": "16",
-      "CapitalYi": 6.6
+      "CapitalYi": 6.45
     },
     {
       "Code": "4439",
@@ -21578,7 +21578,7 @@
       "DividendYield": "4.11",
       "PBratio": "1.08",
       "Category": "04",
-      "CapitalYi": 3.81
+      "CapitalYi": 3.82
     },
     {
       "Code": "1454",
@@ -22088,7 +22088,7 @@
       "DividendYield": "1.97",
       "PBratio": "0.41",
       "Category": "20",
-      "CapitalYi": 7.98
+      "CapitalYi": 7.94
     },
     {
       "Code": "2008",
@@ -22156,7 +22156,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.61",
       "Category": "27",
-      "CapitalYi": 6.86
+      "CapitalYi": 6.82
     },
     {
       "Code": "3150",
@@ -22597,8 +22597,8 @@
       "PEratio": "",
       "DividendYield": "0.00",
       "PBratio": "4.38",
-      "Category": "其他",
-      "CapitalYi": null
+      "Category": "36",
+      "CapitalYi": 4.65
     },
     {
       "Code": "4148",
@@ -22717,7 +22717,7 @@
       "DividendYield": "2.12",
       "PBratio": "0.87",
       "Category": "22",
-      "CapitalYi": 6.14
+      "CapitalYi": 6.13
     },
     {
       "Code": "1438",
@@ -22734,7 +22734,7 @@
       "DividendYield": "0.92",
       "PBratio": "0.77",
       "Category": "14",
-      "CapitalYi": 11.12
+      "CapitalYi": 12.01
     },
     {
       "Code": "00654R",
@@ -23108,7 +23108,7 @@
       "DividendYield": "1.84",
       "PBratio": "2.60",
       "Category": "18",
-      "CapitalYi": 3.57
+      "CapitalYi": 3.75
     },
     {
       "Code": "1213",
@@ -23159,7 +23159,7 @@
       "DividendYield": "0.00",
       "PBratio": "1.97",
       "Category": "04",
-      "CapitalYi": 7.17
+      "CapitalYi": 6.17
     },
     {
       "Code": "911608",
