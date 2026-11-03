@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "twse_yahoo_chart",
-  "generatedAt": "2026-11-03T14:21:12.234Z",
+  "generatedAt": "2026-11-03T15:27:49.028Z",
   "dataDate": "2026-11-03",
   "count": 3,
   "data": [
@@ -15,7 +15,7 @@
       "currency": "TWD",
       "exchange": "TWSE",
       "dataDate": "2026-11-03",
-      "marketTime": "2026-11-03T14:21:12.234Z",
+      "marketTime": "2026-11-03T15:27:49.027Z",
       "changeRate": -3.59,
       "source": "twse_mi_index"
     },
@@ -37,14 +37,14 @@
       "name": "韓國 KOSPI",
       "enName": "KOSPI Composite",
       "symbol": "^KS11",
-      "value": 5648.79,
-      "previousClose": 5859.08,
-      "change": -210.29,
-      "changeRate": -3.59,
+      "value": 5859.08,
+      "previousClose": 5730.74,
+      "change": 128.34,
+      "changeRate": 2.24,
       "currency": "KRW",
       "exchange": "KSC",
-      "dataDate": "2026-11-03",
-      "marketTime": "2026-11-03T00:00:00.000Z",
+      "dataDate": "2026-11-02",
+      "marketTime": "2026-11-02T00:00:00.000Z",
       "source": "yahoo_chart"
     }
   ]
