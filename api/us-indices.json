@@ -1,7 +1,7 @@
 {
   "success": true,
   "source": "yahoo_chart",
-  "generatedAt": "2026-11-10T21:23:17.938Z",
+  "generatedAt": "2026-11-11T14:28:06.883Z",
   "dataDate": "2026-11-10",
   "count": 4,
   "data": [
@@ -37,9 +37,9 @@
       "name": "Nasdaq Composite",
       "enName": "Nasdaq Composite",
       "symbol": "^IXIC",
-      "value": 25065.88,
+      "value": 25065.87,
       "previousClose": 25253.14,
-      "change": -187.26,
+      "change": -187.27,
       "changeRate": -0.74,
       "currency": "USD",
       "exchange": "NIM",
